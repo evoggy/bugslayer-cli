@@ -6,11 +6,13 @@ mod console;
 mod deckctrl;
 mod device;
 mod error;
+mod github;
 mod sigrok;
 mod spi;
 mod stream;
 mod swo;
 mod uart;
+mod update;
 
 use std::io::{IsTerminal, Write};
 use std::time::Duration;
@@ -309,6 +311,27 @@ fn run() -> Result<()> {
         _ => {}
     }
 
+    // Update works with no deck to talk to, e.g. with the RP2350 already in its
+    // bootloader.
+    if let Commands::Update(o) = &args.command {
+        let deck = device::find_deck(args.serial.as_deref(), config.selected.as_deref(), non_interactive).ok();
+        let chips = match o.chip {
+            Some(UpdateChip::Rp2350) => vec![update::Chip::Rp2350],
+            Some(UpdateChip::Probe) => vec![update::Chip::Probe],
+            None => vec![update::Chip::Probe, update::Chip::Rp2350],
+        };
+        let opts = update::Options {
+            chips,
+            check: o.check,
+            tag: o.version.clone(),
+            file: o.file.clone(),
+            prerelease: o.pre,
+            force: o.force,
+            yes: o.yes,
+        };
+        return update::run(deck.as_ref(), &opts, non_interactive);
+    }
+
     let deck = device::find_deck(args.serial.as_deref(), config.selected.as_deref(), non_interactive)?;
     // SWO only needs the probe, not the control channel.
     if let Commands::Swo(o) = &args.command {
@@ -340,13 +363,21 @@ fn run() -> Result<()> {
                 None => println!("{:<12}{}", "capture", "FX2 down (bsly fx2 up)".yellow()),
             }
             match &deck.probe {
-                Some(d) => println!(
-                    "{:<12}{:04x}:{:04x}  serial {}",
-                    "probe",
-                    d.vendor_id(),
-                    d.product_id(),
-                    d.serial_number().unwrap_or("?")
-                ),
+                Some(d) => {
+                    println!(
+                        "{:<12}{:04x}:{:04x}  serial {}",
+                        "probe",
+                        d.vendor_id(),
+                        d.product_id(),
+                        d.serial_number().unwrap_or("?")
+                    );
+                    let v = match update::probe_version(d) {
+                        Ok(Some(v)) => v,
+                        Ok(None) => "unknown (older than the first release)".into(),
+                        Err(e) => format!("? ({})", e),
+                    };
+                    println!("{:<12}{}", "probe fw", v);
+                }
                 None => println!("{:<12}{}", "probe", "not found".yellow()),
             }
         }
@@ -599,7 +630,8 @@ fn run() -> Result<()> {
         | Commands::Select
         | Commands::Settings { .. }
         | Commands::Decode { .. }
-        | Commands::Swo(_) => unreachable!("handled before connecting"),
+        | Commands::Swo(_)
+        | Commands::Update(_) => unreachable!("handled before connecting"),
     }
     Ok(())
 }

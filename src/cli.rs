@@ -202,6 +202,10 @@ enum Commands {
     /// deck standing in for the Crazyflie (standalone only)
     Bridge(BridgeOptions),
 
+    /// Check the deck's firmware against the GitHub releases and install
+    /// updates through the USB bootloaders (private repos: `gh auth login`)
+    Update(UpdateOptions),
+
     /// Print a target's SWO trace (ITM, e.g. the Crazyflie's DEBUG_PRINT)
     Swo(SwoOptions),
 
@@ -603,6 +607,45 @@ enum BridgeUart {
     #[value(name = "2")]
     Uart2,
     Both,
+}
+
+#[derive(Debug, Args)]
+struct UpdateOptions {
+    /// Which firmware; both when omitted
+    #[clap(value_enum)]
+    chip: Option<UpdateChip>,
+
+    /// Only show installed and latest versions
+    #[clap(long)]
+    check: bool,
+
+    /// Install this release instead of the latest, e.g. 0.8.0 (one chip)
+    #[clap(long, value_name = "TAG", conflicts_with = "file")]
+    version: Option<String>,
+
+    /// Install this UF2 instead of a release (one chip)
+    #[clap(long, value_hint = ValueHint::FilePath)]
+    file: Option<std::path::PathBuf>,
+
+    /// Consider prereleases too
+    #[clap(long)]
+    pre: bool,
+
+    /// Reinstall even when the installed version is current
+    #[clap(long)]
+    force: bool,
+
+    /// Don't ask before installing
+    #[clap(short, long)]
+    yes: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum UpdateChip {
+    /// The RP2350 (control, capture; carries the FX2 firmware)
+    Rp2350,
+    /// The RP2040 debug probe
+    Probe,
 }
 
 #[derive(Debug, Args)]

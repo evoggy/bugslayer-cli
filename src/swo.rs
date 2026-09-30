@@ -175,7 +175,7 @@ fn port_name(swd: u8) -> &'static str {
 }
 
 /// One CMSIS-DAP command/response on an open DAP interface.
-fn dap(intf: &nusb::Interface, cmd: &[u8]) -> Result<Vec<u8>> {
+pub(crate) fn dap(intf: &nusb::Interface, cmd: &[u8]) -> Result<Vec<u8>> {
     let timeout = Duration::from_millis(500);
     // Interface n has OUT endpoint 0x04 + 2n and IN endpoint 0x85 + 2n.
     let n = intf.interface_number();

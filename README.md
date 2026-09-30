@@ -49,7 +49,28 @@ lists USB devices).
 | `bsly deckctrl scan\|info\|gpio\|read\|write\|reset` | Deck controllers (DeckCtrl), enumerated as a Crazyflie does it |
 | `bsly uart [-l RX1] [-b 1000000]` | Live UART decode of expansion-port lines (sniffed, never driven) |
 | `bsly swo [--swd 1\|2] [-b 2000000] [-p 0,1]` | SWO trace (ITM) of the target on probe port P1 or P5 |
+| `bsly update [rp2350\|probe] [--check]` | Compare with the GitHub releases and install updates over USB |
 | `bsly raw [LINE...]` | Raw control-channel lines; with none, an interactive console with Tab completion |
+
+### Updating the firmware
+
+```
+bsly update --check          # installed vs latest release, per chip
+bsly update                  # install whatever is out of date (asks first; -y doesn't)
+bsly update rp2350 --version 0.8.0
+bsly update probe --file bugslayer-probe-0.1.0.uf2
+```
+
+Releases come from `evoggy/bugslayer-deck-firmware` (RP2350, FX2 image inside) and
+`evoggy/bugslayer-probe-firmware` (RP2040 probe), tagged `X.Y.Z`. Both are private, so bsly
+needs a token: `GITHUB_TOKEN`/`GH_TOKEN`, or a `gh auth login`.
+
+The RP2350 reboots into its USB bootloader on `bootsel` (deck firmware 0.8.0+) and the
+probe on CMSIS-DAP vendor command 0x9F (probe firmware 0.1.0+); bsly then copies the UF2
+to the `RP2350` / `RPI-RP2` drive and checks the version the chip comes back with. Older
+firmware can't reboot itself: bsly asks you to hold SW2 while plugging USB in, which puts
+both chips in their bootloaders, and installs the probe first so one press covers both.
+On Linux without an automounter, bsly mounts the drive with `udisksctl`.
 
 ### Capture
 
