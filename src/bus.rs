@@ -36,6 +36,7 @@ pub struct Bus<'a> {
 pub struct PortState {
     pub cf_vcc: bool,
     pub vcc_en: bool,
+    pub vcom_en: bool,
     pub pull: bool,
 }
 
@@ -50,7 +51,7 @@ pub fn port_state(ctl: &mut Control) -> Result<PortState> {
         ));
     }
     let on = |k: &str| kv.get(k).map(String::as_str) == Some("1");
-    Ok(PortState { cf_vcc: on("cf_vcc"), vcc_en: on("vcc_en"), pull: on("pull") })
+    Ok(PortState { cf_vcc: on("cf_vcc"), vcc_en: on("vcc_en"), vcom_en: on("vcom_en"), pull: on("pull") })
 }
 
 impl<'a> Bus<'a> {
@@ -70,19 +71,29 @@ impl<'a> Bus<'a> {
         if !st.cf_vcc {
             if !opts.power {
                 crate::require_arg(non_interactive, "--power: the expansion port is unpowered")?;
-                let yes = inquire::Confirm::new("The expansion port is unpowered. Switch VCC on to power the decks?")
+                let yes = inquire::Confirm::new("The expansion port is unpowered. Switch VCC and VCOM on to power the decks?")
                     .with_default(true)
                     .prompt()?;
                 if !yes {
                     bail!(CliError::Rejected("the decks need VCC to answer on I2C".into()));
                 }
             }
+            // Both rails: some decks (Lighthouse) run from VCOM, not VCC.
             ctl.expect_ok("pwr vcc on")?;
-            eprintln!("{} VCC switched on", "power".green());
+            ctl.expect_ok("pwr vcom on")?;
+            eprintln!("{} VCC and VCOM switched on", "power".green());
             // Deck controllers need a moment after power-on before they answer.
             std::thread::sleep(Duration::from_millis(150));
         }
         if !crazyflie && !st.pull {
+            // The firmware refuses the pull-ups without VCOM: decks that run
+            // from VCOM (Lighthouse) would be back-powered through SDA/SCL.
+            // VCC may have been switched on by hand, without VCOM.
+            if st.cf_vcc && !st.vcom_en {
+                ctl.expect_ok("pwr vcom on")?;
+                eprintln!("{} VCOM switched on", "power".green());
+                std::thread::sleep(Duration::from_millis(150));
+            }
             ctl.expect_ok("pull on")?;
             eprintln!("{} I2C pull-ups on", "bus".green());
         }

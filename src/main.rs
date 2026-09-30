@@ -147,8 +147,9 @@ fn status_lines(ctl: &mut Control) -> Result<Vec<String>> {
         format!("  sink blocks {}  pipe test {} ({} words)", get("sink_blocks"), get("counter"), get("words")),
         format!("{}", "expansion port".bold()),
         format!(
-            "  VCC present {}  switched on by the deck: VCC {}  VCOM {}",
+            "  VCC present {}  VCOM present {}  switched on by the deck: VCC {}  VCOM {}",
             flag("cf_vcc"),
+            flag("vcom"),
             flag("vcc_en"),
             flag("vcom_en")
         ),
@@ -163,7 +164,7 @@ fn status_lines(ctl: &mut Control) -> Result<Vec<String>> {
     let known = [
         "armed", "busy", "aborted", "sink", "spi", "session", "rate", "samples", "spi_bytes", "blocks",
         "overruns", "lost", "fx2", "sink_blocks", "boot", "eeprom_read", "ifclk", "counter", "words", "cf_vcc",
-        "vcc_en", "vcom_en", "pull", "i2c", "i2c_rate",
+        "vcc_en", "vcom_en", "vcom", "pull", "i2c", "i2c_rate",
     ];
     let extra: Vec<String> =
         kv.iter().filter(|(k, _)| !known.contains(&k.as_str())).map(|(k, v)| format!("{}={}", k, v)).collect();
