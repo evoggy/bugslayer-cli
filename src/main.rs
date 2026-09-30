@@ -162,6 +162,7 @@ fn status_lines(ctl: &mut Control) -> Result<Vec<String>> {
             get("uart2_baud"),
             get("uart2_dropped")
         ),
+        format!("  TX2/RX2 to {}  held low: {}", get("mux"), get("low")),
         format!(
             "  I2C pull-ups {}  I2C master {}{}",
             flag("pull"),
@@ -174,7 +175,7 @@ fn status_lines(ctl: &mut Control) -> Result<Vec<String>> {
         "armed", "busy", "aborted", "sink", "spi", "session", "rate", "samples", "spi_bytes", "blocks",
         "overruns", "lost", "fx2", "sink_blocks", "boot", "eeprom_read", "ifclk", "counter", "words", "cf_vcc",
         "vcc_en", "vcom_en", "vcom", "pull", "i2c", "i2c_rate", "uart1", "uart1_baud", "uart1_dropped",
-        "uart2", "uart2_baud", "uart2_dropped",
+        "uart2", "uart2_baud", "uart2_dropped", "mux", "low",
     ];
     let extra: Vec<String> =
         kv.iter().filter(|(k, _)| !known.contains(&k.as_str())).map(|(k, v)| format!("{}={}", k, v)).collect();
@@ -503,6 +504,57 @@ fn run() -> Result<()> {
                 hex: o.hex,
             };
             uart::run(&deck, &mut ctl, &opts, non_interactive)?;
+        }
+        Commands::Mux { mode, wait } => {
+            let mode = match mode {
+                Some(m) => *m,
+                None => choose(
+                    non_interactive,
+                    "<MODE>",
+                    "TX2/RX2 on the expansion port:",
+                    &[
+                        (MuxMode::Uart, "uart  to the deck's UART2 (default)"),
+                        (MuxMode::Usb, "usb   to the hub as USB (standalone only)"),
+                        (MuxMode::Off, "off   disconnected"),
+                    ],
+                )?,
+            };
+            let name = match mode {
+                MuxMode::Uart => "uart",
+                MuxMode::Usb => "usb",
+                MuxMode::Off => "off",
+            };
+            println!("{}", ctl.expect_ok(&format!("mux {}", name))?);
+            if mode == MuxMode::Usb {
+                let deadline = std::time::Instant::now() + Duration::from_secs_f64(*wait);
+                loop {
+                    if let Some(d) = device::exp_usb_device(&deck)? {
+                        println!(
+                            "USB device on the expansion port: {:04x}:{:04x} {} {}",
+                            d.vendor_id(),
+                            d.product_id(),
+                            d.manufacturer_string().unwrap_or(""),
+                            d.product_string().unwrap_or("").bold()
+                        );
+                        break;
+                    }
+                    if std::time::Instant::now() > deadline {
+                        println!("{} no USB device on the expansion port after {} s", "note:".yellow(), wait);
+                        break;
+                    }
+                    std::thread::sleep(Duration::from_millis(200));
+                }
+            }
+        }
+        Commands::Drive { pin, level } => {
+            let pin = match pin {
+                IoPin::Io1 => "IO_1",
+                IoPin::Io2 => "IO_2",
+                IoPin::Io3 => "IO_3",
+                IoPin::Io4 => "IO_4",
+            };
+            let level = if *level == DriveLevel::Low { "low" } else { "release" };
+            println!("{}", ctl.expect_ok(&format!("drive {} {}", pin, level))?);
         }
         Commands::Bridge(o) => {
             let uarts: &[u8] = match o.uart {

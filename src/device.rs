@@ -54,6 +54,16 @@ fn hub_of(d: &DeviceInfo) -> (u8, Vec<u8>) {
     (d.busnum(), chain[..chain.len().saturating_sub(1)].to_vec())
 }
 
+/// The USB device a deck on the expansion port brings up when TX2/RX2 are
+/// switched to USB (`mux usb`): whatever sits on port 4 of the deck's hub.
+pub fn exp_usb_device(deck: &Deck) -> Result<Option<DeviceInfo>> {
+    let (bus, hub) = hub_of(&deck.ctrl);
+    Ok(list_devices()?.into_iter().find(|d| {
+        let chain = d.port_chain();
+        d.busnum() == bus && chain.len() == hub.len() + 1 && chain.starts_with(&hub) && chain.last() == Some(&4)
+    }))
+}
+
 pub fn list_devices() -> Result<Vec<DeviceInfo>> {
     Ok(nusb::list_devices()
         .wait()

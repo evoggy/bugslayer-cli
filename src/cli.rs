@@ -179,6 +179,25 @@ enum Commands {
     /// Print what UART lines on the expansion port carry (sniffed, never driven)
     Uart(UartOptions),
 
+    /// Switch the port's TX2/RX2 between UART2 and USB (the deck's hub port 4, for
+    /// decks with a USB MCU there: D- = TX2, D+ = RX2); standalone only
+    Mux {
+        #[clap(value_enum)]
+        mode: Option<MuxMode>,
+        /// Seconds to wait for a USB device after switching to usb
+        #[clap(long, default_value_t = 5.0)]
+        wait: f64,
+    },
+
+    /// Hold an IO pin low, e.g. a deck MCU's BOOT line, or release it (open
+    /// drain, never driven high; standalone only)
+    Drive {
+        #[clap(value_enum)]
+        pin: IoPin,
+        #[clap(value_enum)]
+        level: DriveLevel,
+    },
+
     /// Bridge the Crazyflie's UART1/UART2 to a serial port of the deck, with the
     /// deck standing in for the Crazyflie (standalone only)
     Bridge(BridgeOptions),
@@ -212,6 +231,34 @@ enum PowerRail {
     Vcc,
     /// Expansion-port VCOM
     Vcom,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum MuxMode {
+    /// TX2/RX2 to the deck's UART2 (power-on default)
+    Uart,
+    /// TX2/RX2 to the hub's port 4 as USB Full Speed
+    Usb,
+    /// Disconnected
+    Off,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum IoPin {
+    #[value(name = "IO_1")]
+    Io1,
+    #[value(name = "IO_2")]
+    Io2,
+    #[value(name = "IO_3")]
+    Io3,
+    #[value(name = "IO_4")]
+    Io4,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum DriveLevel {
+    Low,
+    Release,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]

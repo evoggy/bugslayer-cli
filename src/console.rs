@@ -14,8 +14,8 @@ use crate::device::Control;
 fn next_words(words: &[&str]) -> &'static [&'static str] {
     match words {
         [] => &[
-            "arm", "clk", "dbg", "disarm", "fx2", "help", "id", "ping", "pins", "prof", "pull", "pwr",
-            "stat", "uart", "ver",
+            "arm", "clk", "dbg", "disarm", "drive", "fx2", "help", "id", "mux", "ping", "pins", "prof",
+            "pull", "pwr", "stat", "uart", "ver",
         ],
         ["fx2"] => &["boot", "down", "reboot", "test", "up"],
         ["fx2", "boot"] => &["c0", "c2", "rom"],
@@ -24,6 +24,9 @@ fn next_words(words: &[&str]) -> &'static [&'static str] {
         ["pwr", _] => &["off", "on"],
         ["pull"] => &["off", "on"],
         ["uart"] => &["1", "2"],
+        ["mux"] => &["off", "uart", "usb"],
+        ["drive"] => &["IO_1", "IO_2", "IO_3", "IO_4"],
+        ["drive", _] => &["low", "release"],
         ["uart", _] => &["off", "on"],
         ["arm", _, ..] if words.len() <= 4 => &["counter", "fx2", "pins", "spi", "usb"],
         _ => &[],
