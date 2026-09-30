@@ -48,6 +48,7 @@ lists USB devices).
 | `bsly i2c scan\|read\|write\|recover` | Raw I2C on the expansion port, the deck as master |
 | `bsly deckctrl scan\|info\|gpio\|read\|write\|reset` | Deck controllers (DeckCtrl), enumerated as a Crazyflie does it |
 | `bsly uart [-l RX1] [-b 1000000]` | Live UART decode of expansion-port lines (sniffed, never driven) |
+| `bsly swo [--swd 1\|2] [-b 2000000] [-p 0,1]` | SWO trace (ITM) of the target on probe port P1 or P5 |
 | `bsly raw [LINE...]` | Raw control-channel lines; with none, an interactive console with Tab completion |
 
 ### Capture
@@ -107,6 +108,24 @@ least 1 Msps; the FX2 when that is above ~380 ksps) and decodes 8N1 on the host.
 It prints raw text for one line, or line-prefixed text for several (default:
 TX1, RX1, TX2, RX2). The control port is opened shared, so another `bsly` can
 power and configure a deck while `bsly uart` listens.
+
+### SWO
+
+`bsly swo` routes the SWO line of probe port `--swd 1` (P1, default: the
+Crazyflie's STM32) or `--swd 2` (P5) to the probe's SWO ACM0 port, reads it and
+decodes ITM. Only those two ports have an SWO line, and only one is received at
+a time. Stimulus port 0 (`DEBUG_PRINT` with the Crazyflie firmware's
+`CONFIG_DEBUG_PRINT_ON_SWO`) prints as text, other ports given with `-p` as
+`[pN] value` lines. `--hex` and `--raw` show the bytes. The baud rate must match
+the target's TPIU (the firmware's `CONFIG_DEBUG_PRINT_ON_SWO_BAUDRATE`).
+
+The STM32 drives SWO only while its debug port is in SWD mode. It powers up in
+JTAG mode, and OpenOCD switches it back to JTAG when it exits, so `bsly swo`
+switches it to SWD through the selected probe port at start, again each time a
+debugger releases that port (polled every 100 ms), and after a second without
+SWO data (at most every 2 s: a line reset does not disturb a running target).
+Up to about a second of output right after a debug session can be lost.
+`--no-swd` leaves the debug port alone.
 
 ## Interactivity
 

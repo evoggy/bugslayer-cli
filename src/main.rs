@@ -9,6 +9,7 @@ mod error;
 mod sigrok;
 mod spi;
 mod stream;
+mod swo;
 mod uart;
 
 use std::io::{IsTerminal, Write};
@@ -297,6 +298,19 @@ fn run() -> Result<()> {
     }
 
     let deck = device::find_deck(args.serial.as_deref(), config.selected.as_deref(), non_interactive)?;
+    // SWO only needs the probe, not the control channel.
+    if let Commands::Swo(o) = &args.command {
+        let opts = swo::Options {
+            swd: o.swd,
+            baud: o.baud,
+            ports: o.port.clone(),
+            duration: o.duration,
+            hex: o.hex,
+            raw: o.raw,
+            no_swd: o.no_swd,
+        };
+        return swo::run(&deck, &opts);
+    }
     let mut ctl = Control::open(&deck, args.debug)?;
 
     match &args.command {
@@ -493,7 +507,8 @@ fn run() -> Result<()> {
         | Commands::List
         | Commands::Select
         | Commands::Settings { .. }
-        | Commands::Decode { .. } => unreachable!("handled before connecting"),
+        | Commands::Decode { .. }
+        | Commands::Swo(_) => unreachable!("handled before connecting"),
     }
     Ok(())
 }

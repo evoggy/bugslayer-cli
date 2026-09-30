@@ -179,6 +179,9 @@ enum Commands {
     /// Print what UART lines on the expansion port carry (sniffed, never driven)
     Uart(UartOptions),
 
+    /// Print a target's SWO trace (ITM, e.g. the Crazyflie's DEBUG_PRINT)
+    Swo(SwoOptions),
+
     /// Send raw control-channel lines; with none, open an interactive console
     Raw {
         /// Command lines, one per argument, e.g. "fx2 up" stat
@@ -525,6 +528,39 @@ struct UartOptions {
     /// Print bytes as hex instead of text
     #[clap(long)]
     hex: bool,
+}
+
+#[derive(Debug, Args)]
+struct SwoOptions {
+    /// Probe port the target is on: 1 (P1) or 2 (P5); the others have no SWO
+    #[clap(long, default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..=2))]
+    swd: u8,
+
+    /// SWO baud rate; must match the target's TPIU (the Crazyflie firmware's
+    /// CONFIG_DEBUG_PRINT_ON_SWO_BAUDRATE, 2000000 by default)
+    #[clap(short, long, default_value_t = 2_000_000)]
+    baud: u32,
+
+    /// ITM stimulus ports to print (DEBUG_PRINT is port 0)
+    #[clap(short, long, value_delimiter = ',', default_value = "0",
+           value_parser = clap::value_parser!(u8).range(0..32))]
+    port: Vec<u8>,
+
+    /// How long to listen; until Ctrl-C when omitted
+    #[clap(short = 't', long, value_parser = parse_duration)]
+    duration: Option<std::time::Duration>,
+
+    /// Print payloads as hex instead of text
+    #[clap(long)]
+    hex: bool,
+
+    /// Print the raw SWO bytes, without decoding ITM
+    #[clap(long)]
+    raw: bool,
+
+    /// Do not switch the target's debug port to SWD (SWO is silent in JTAG mode)
+    #[clap(long)]
+    no_swd: bool,
 }
 
 #[derive(Debug, Subcommand)]
