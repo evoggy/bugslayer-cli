@@ -75,7 +75,11 @@ pub fn list_decks() -> Result<Vec<Deck>> {
                 .iter()
                 .find(|p| match &p.port_type {
                     serialport::SerialPortType::UsbPort(u) => {
-                        u.vid == VID && u.pid == PID_CTRL && u.serial_number.as_deref() == Some(&serial)
+                        // Interface 0: the control channel, not a UART bridge port.
+                        u.vid == VID
+                            && u.pid == PID_CTRL
+                            && u.serial_number.as_deref() == Some(&serial)
+                            && u.interface.is_none_or(|i| i == 0)
                     }
                     _ => false,
                 })
@@ -93,6 +97,23 @@ pub fn list_decks() -> Result<Vec<Deck>> {
         .collect();
     decks.sort_by(|a, b| a.serial.cmp(&b.serial));
     Ok(decks)
+}
+
+/// The serial port bridged to the Crazyflie's UART `n` (1 or 2): CDC
+/// interfaces 3 and 5 of the control device.
+pub fn uart_port(serial: &str, n: u8) -> Option<String> {
+    let itf = 1 + 2 * n;
+    serialport::available_ports().unwrap_or_default().into_iter().find_map(|p| match &p.port_type {
+        serialport::SerialPortType::UsbPort(u)
+            if u.vid == VID
+                && u.pid == PID_CTRL
+                && u.serial_number.as_deref() == Some(serial)
+                && u.interface == Some(itf) =>
+        {
+            Some(p.port_name)
+        }
+        _ => None,
+    })
 }
 
 /// The deck to use: `--serial` if given, else the only one connected, else the

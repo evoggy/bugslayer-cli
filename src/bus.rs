@@ -54,6 +54,36 @@ pub fn port_state(ctl: &mut Control) -> Result<PortState> {
     Ok(PortState { cf_vcc: on("cf_vcc"), vcc_en: on("vcc_en"), vcom_en: on("vcom_en"), pull: on("pull") })
 }
 
+/// Standalone (no Crazyflie on the port): make sure both VCC and VCOM are on,
+/// asking first unless `power`. The firmware refuses to drive pins high
+/// without VCOM, because decks that run from it (Lighthouse) would be
+/// back-powered through them.
+pub fn power_standalone(ctl: &mut Control, st: &PortState, power: bool, non_interactive: bool) -> Result<()> {
+    if !st.cf_vcc {
+        if !power {
+            crate::require_arg(non_interactive, "--power: the expansion port is unpowered")?;
+            let yes = inquire::Confirm::new("The expansion port is unpowered. Switch VCC and VCOM on to power the decks?")
+                .with_default(true)
+                .prompt()?;
+            if !yes {
+                bail!(CliError::Rejected("the decks need power to answer".into()));
+            }
+        }
+        ctl.expect_ok("pwr vcc on")?;
+        ctl.expect_ok("pwr vcom on")?;
+        eprintln!("{} VCC and VCOM switched on", "power".green());
+    } else if !st.vcom_en {
+        // VCC was switched on by hand, without VCOM.
+        ctl.expect_ok("pwr vcom on")?;
+        eprintln!("{} VCOM switched on", "power".green());
+    } else {
+        return Ok(());
+    }
+    // Deck controllers need a moment after power-on before they answer.
+    std::thread::sleep(Duration::from_millis(150));
+    Ok(())
+}
+
 impl<'a> Bus<'a> {
     /// Make the bus usable: refuse if a Crazyflie is its master, power the
     /// decks and pull the bus up when standalone, and start the I2C master.
@@ -68,32 +98,10 @@ impl<'a> Bus<'a> {
                     .into()
             ));
         }
-        if !st.cf_vcc {
-            if !opts.power {
-                crate::require_arg(non_interactive, "--power: the expansion port is unpowered")?;
-                let yes = inquire::Confirm::new("The expansion port is unpowered. Switch VCC and VCOM on to power the decks?")
-                    .with_default(true)
-                    .prompt()?;
-                if !yes {
-                    bail!(CliError::Rejected("the decks need VCC to answer on I2C".into()));
-                }
-            }
-            // Both rails: some decks (Lighthouse) run from VCOM, not VCC.
-            ctl.expect_ok("pwr vcc on")?;
-            ctl.expect_ok("pwr vcom on")?;
-            eprintln!("{} VCC and VCOM switched on", "power".green());
-            // Deck controllers need a moment after power-on before they answer.
-            std::thread::sleep(Duration::from_millis(150));
+        if !crazyflie {
+            power_standalone(ctl, &st, opts.power, non_interactive)?;
         }
         if !crazyflie && !st.pull {
-            // The firmware refuses the pull-ups without VCOM: decks that run
-            // from VCOM (Lighthouse) would be back-powered through SDA/SCL.
-            // VCC may have been switched on by hand, without VCOM.
-            if st.cf_vcc && !st.vcom_en {
-                ctl.expect_ok("pwr vcom on")?;
-                eprintln!("{} VCOM switched on", "power".green());
-                std::thread::sleep(Duration::from_millis(150));
-            }
             ctl.expect_ok("pull on")?;
             eprintln!("{} I2C pull-ups on", "bus".green());
         }

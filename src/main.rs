@@ -154,6 +154,15 @@ fn status_lines(ctl: &mut Control) -> Result<Vec<String>> {
             flag("vcom_en")
         ),
         format!(
+            "  UART bridge: UART1 {} ({} baud, {} dropped)  UART2 {} ({} baud, {} dropped)",
+            get("uart1"),
+            get("uart1_baud"),
+            get("uart1_dropped"),
+            get("uart2"),
+            get("uart2_baud"),
+            get("uart2_dropped")
+        ),
+        format!(
             "  I2C pull-ups {}  I2C master {}{}",
             flag("pull"),
             get("i2c"),
@@ -164,7 +173,8 @@ fn status_lines(ctl: &mut Control) -> Result<Vec<String>> {
     let known = [
         "armed", "busy", "aborted", "sink", "spi", "session", "rate", "samples", "spi_bytes", "blocks",
         "overruns", "lost", "fx2", "sink_blocks", "boot", "eeprom_read", "ifclk", "counter", "words", "cf_vcc",
-        "vcc_en", "vcom_en", "vcom", "pull", "i2c", "i2c_rate",
+        "vcc_en", "vcom_en", "vcom", "pull", "i2c", "i2c_rate", "uart1", "uart1_baud", "uart1_dropped",
+        "uart2", "uart2_baud", "uart2_dropped",
     ];
     let extra: Vec<String> =
         kv.iter().filter(|(k, _)| !known.contains(&k.as_str())).map(|(k, v)| format!("{}={}", k, v)).collect();
@@ -493,6 +503,34 @@ fn run() -> Result<()> {
                 hex: o.hex,
             };
             uart::run(&deck, &mut ctl, &opts, non_interactive)?;
+        }
+        Commands::Bridge(o) => {
+            let uarts: &[u8] = match o.uart {
+                BridgeUart::Uart1 => &[1],
+                BridgeUart::Uart2 => &[2],
+                BridgeUart::Both => &[1, 2],
+            };
+            if o.state == OnOff::On {
+                let st = bus::port_state(&mut ctl)?;
+                if st.cf_vcc && !st.vcc_en {
+                    bail!(CliError::Rejected(
+                        "a Crazyflie powers the expansion port and drives TX1/TX2; the bridge is standalone \
+                         only (`bsly uart` sniffs without driving)"
+                            .into()
+                    ));
+                }
+                bus::power_standalone(&mut ctl, &st, o.power, non_interactive)?;
+            }
+            for &n in uarts {
+                ctl.expect_ok(&format!("uart {} {}", n, on_off(o.state)))?;
+                if o.state == OnOff::On {
+                    let port = device::uart_port(&deck.serial, n)
+                        .unwrap_or_else(|| "(serial port not found; is cdc_acm bound?)".into());
+                    println!("UART{} -> {}", n, port.bold());
+                } else {
+                    println!("UART{} off", n);
+                }
+            }
         }
         Commands::Raw { lines } => {
             if lines.is_empty() {

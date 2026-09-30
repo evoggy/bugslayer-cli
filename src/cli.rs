@@ -179,6 +179,10 @@ enum Commands {
     /// Print what UART lines on the expansion port carry (sniffed, never driven)
     Uart(UartOptions),
 
+    /// Bridge the Crazyflie's UART1/UART2 to a serial port of the deck, with the
+    /// deck standing in for the Crazyflie (standalone only)
+    Bridge(BridgeOptions),
+
     /// Print a target's SWO trace (ITM, e.g. the Crazyflie's DEBUG_PRINT)
     Swo(SwoOptions),
 
@@ -528,6 +532,30 @@ struct UartOptions {
     /// Print bytes as hex instead of text
     #[clap(long)]
     hex: bool,
+}
+
+#[derive(Debug, Args)]
+struct BridgeOptions {
+    /// Which UART
+    #[clap(value_enum)]
+    uart: BridgeUart,
+
+    /// On or off
+    #[clap(value_enum)]
+    state: OnOff,
+
+    /// Switch the port's VCC and VCOM on without asking if needed
+    #[clap(long)]
+    power: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum BridgeUart {
+    #[value(name = "1")]
+    Uart1,
+    #[value(name = "2")]
+    Uart2,
+    Both,
 }
 
 #[derive(Debug, Args)]
