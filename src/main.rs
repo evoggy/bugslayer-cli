@@ -1,18 +1,14 @@
 // bsly: command-line client for the Bugslayer deck.
 
-mod bus;
 mod capture;
 mod console;
-mod deckctrl;
-mod device;
 mod error;
-mod github;
-mod sigrok;
-mod spi;
-mod stream;
 mod swo;
 mod uart;
 mod update;
+
+// The deck protocol lives in bugslayer-lib, shared with bugslayer-ui.
+use bugslayer::{bus, deckctrl, device, sigrok, spi, stream};
 
 use std::io::{IsTerminal, Write};
 use std::time::Duration;
@@ -62,6 +58,59 @@ fn choose<T: Copy>(non_interactive: bool, arg: &str, prompt: &str, options: &[(T
     let labels: Vec<&str> = options.iter().map(|o| o.1).collect();
     let pick = Select::new(prompt, labels.clone()).prompt()?;
     Ok(options[labels.iter().position(|l| *l == pick).unwrap()].0)
+}
+
+/// The deck to use: `--serial` if given, else the only one connected, else the
+/// selected one (`bsly select`), else ask.
+fn find_deck(serial: Option<&str>, selected: Option<&str>, non_interactive: bool) -> Result<Deck> {
+    match device::find_deck(serial, selected)? {
+        device::DeckChoice::One(d) => Ok(*d),
+        device::DeckChoice::Several(decks) => {
+            require_arg(non_interactive, "--serial: several decks are connected")?;
+            let labels: Vec<String> = decks.iter().map(device::describe).collect();
+            let pick = Select::new("Several decks are connected, which one?", labels.clone()).prompt()?;
+            let idx = labels.iter().position(|l| *l == pick).unwrap();
+            Ok(decks.into_iter().nth(idx).unwrap())
+        }
+    }
+}
+
+/// Standalone: VCC and VCOM on, asking first when the port is unpowered
+/// unless `power`.
+fn power_standalone(ctl: &mut Control, st: &bus::PortState, power: bool, non_interactive: bool) -> Result<()> {
+    let power = power || !st.unpowered() || confirm_power(non_interactive)?;
+    for (tag, msg) in bus::power_standalone(ctl, st, power)? {
+        eprintln!("{} {}", tag.green(), msg);
+    }
+    Ok(())
+}
+
+fn confirm_power(non_interactive: bool) -> Result<bool> {
+    require_arg(non_interactive, "--power: the expansion port is unpowered")?;
+    let yes = inquire::Confirm::new("The expansion port is unpowered. Switch VCC and VCOM on to power the decks?")
+        .with_default(true)
+        .prompt()?;
+    if !yes {
+        bail!(CliError::Rejected("the decks need power to answer".into()));
+    }
+    Ok(true)
+}
+
+/// Onto the expansion-port I2C bus (bugslayer::bus::Bus::open), asking before
+/// powering an unpowered port.
+fn open_bus<'a>(ctl: &'a mut Control, b: &BusArgs, non_interactive: bool) -> Result<bus::Bus<'a>> {
+    let mut opts = bus_opts(b);
+    if !opts.power {
+        // An unpowered port has no Crazyflie on it: the deck would power it.
+        if bus::port_state(ctl)?.unpowered() {
+            opts.power = confirm_power(non_interactive)?;
+        }
+    }
+    let bus = bus::Bus::open(ctl, &opts)?;
+    for (tag, msg) in &bus.notes {
+        eprintln!("{} {}", tag.green(), msg);
+    }
+    Ok(bus)
 }
 
 fn on_off(s: OnOff) -> &'static str {
@@ -300,8 +349,8 @@ fn run() -> Result<()> {
             let Some(sck8) = f.sck8 else {
                 bail!(CliError::NotFound(format!("{} has no sck8 stream (capture with --spi)", file.display())));
             };
-            let d = spi::decode(&sck8, Some((&f.raw16, f.rate_hz as f64)));
-            spi::report(&d, 0, true);
+            let d = spi::decode(&sck8, Some((&f.raw16 as &dyn spi::Raw16, f.rate_hz as f64)));
+            capture::report(&d, 0, true);
             let want = cs.map(|c| c.to_possible_value().unwrap().get_name().to_string());
             for t in d.txns.iter().filter(|t| want.as_ref().is_none_or(|w| &t.cs == w)) {
                 println!("{}", spi::format_txn(t));
@@ -314,7 +363,7 @@ fn run() -> Result<()> {
     // Update works with no deck to talk to, e.g. with the RP2350 already in its
     // bootloader.
     if let Commands::Update(o) = &args.command {
-        let deck = device::find_deck(args.serial.as_deref(), config.selected.as_deref(), non_interactive).ok();
+        let deck = find_deck(args.serial.as_deref(), config.selected.as_deref(), non_interactive).ok();
         let chips = match o.chip {
             Some(UpdateChip::Rp2350) => vec![update::Chip::Rp2350],
             Some(UpdateChip::Probe) => vec![update::Chip::Probe],
@@ -332,7 +381,7 @@ fn run() -> Result<()> {
         return update::run(deck.as_ref(), &opts, non_interactive);
     }
 
-    let deck = device::find_deck(args.serial.as_deref(), config.selected.as_deref(), non_interactive)?;
+    let deck = find_deck(args.serial.as_deref(), config.selected.as_deref(), non_interactive)?;
     // SWO only needs the probe, not the control channel.
     if let Commands::Swo(o) = &args.command {
         let opts = swo::Options {
@@ -602,7 +651,7 @@ fn run() -> Result<()> {
                             .into()
                     ));
                 }
-                bus::power_standalone(&mut ctl, &st, o.power, non_interactive)?;
+                power_standalone(&mut ctl, &st, o.power, non_interactive)?;
             }
             for &n in uarts {
                 ctl.expect_ok(&format!("uart {} {}", n, on_off(o.state)))?;
@@ -636,6 +685,31 @@ fn run() -> Result<()> {
     Ok(())
 }
 
+/// One deck controller: by `--deck`, the only one, or ask.
+fn pick_deckctrl<'a>(
+    decks: &'a [deckctrl::Found],
+    sel: Option<&str>,
+    non_interactive: bool,
+) -> Result<&'a deckctrl::Found> {
+    if let Some(f) = deckctrl::pick(decks, sel)? {
+        return Ok(f);
+    }
+    require_arg(non_interactive, "--deck: several deck controllers answered")?;
+    let labels: Vec<String> =
+        decks.iter().map(|d| format!("0x{:02x}  {}  rev {}  {}", d.addr, d.name, d.rev, d.cpu_id)).collect();
+    let pick = Select::new("Which deck?", labels.clone()).prompt()?;
+    Ok(&decks[labels.iter().position(|l| *l == pick).unwrap()])
+}
+
+fn gpio_table(dir: u16, value: u16) -> Vec<String> {
+    let mut out = vec![format!("{}", format!("{:<6}{:<6}{:<8}{}", "GPIO", "pin", "dir", "level").bold())];
+    for (i, pin, out_dir, high) in deckctrl::gpio_rows(dir, value) {
+        let level = if high { "high".green().bold().to_string() } else { "low".dimmed().to_string() };
+        out.push(format!("{:<6}{:<6}{:<8}{}", i, pin, if out_dir { "out" } else { "in" }, level));
+    }
+    out
+}
+
 fn bus_opts(b: &BusArgs) -> bus::BusOptions {
     bus::BusOptions { rate: b.i2c_rate, force: b.force, power: b.power }
 }
@@ -643,31 +717,18 @@ fn bus_opts(b: &BusArgs) -> bus::BusOptions {
 fn i2c_command(ctl: &mut Control, command: &I2cCommands, non_interactive: bool) -> Result<()> {
     match command {
         I2cCommands::Recover => {
-            let reply = ctl.expect_ok("i2c recover")?;
-            let ok = device::kv(&reply).get("sda").map(String::as_str) == Some("1");
+            let ok = bus::recover(ctl)?;
             println!("{}", if ok { "SDA released".green().to_string() } else { "SDA is still held low".red().to_string() });
         }
         I2cCommands::Scan { bus: b } => {
-            let mut bus = bus::Bus::open(ctl, &bus_opts(b), non_interactive)?;
-            let mut found = Vec::new();
-            for addr in 0x08u8..0x78 {
-                if addr == deckctrl::ADDR_RESET || addr == deckctrl::ADDR_LISTEN {
-                    continue;
-                }
-                if bus.xfer(addr, &[], 1)?.is_ok() {
-                    found.push(addr);
-                }
-            }
+            let mut bus = open_bus(ctl, b, non_interactive)?;
+            let found = bus.scan()?;
             if found.is_empty() {
                 println!("No device acknowledged");
             }
             for a in found {
-                let what = match a {
-                    deckctrl::ADDR_DISCOVERY => "  DeckCtrl discovery address (unenumerated deck controller)",
-                    0x44..=0x4f => "  DeckCtrl assigned range",
-                    0x50..=0x57 => "  EEPROM range",
-                    _ => "",
-                };
+                let what = bus::address_hint(a);
+                let what = if what.is_empty() { String::new() } else { format!("  {}", what) };
                 println!("0x{:02x}{}", a, what.dimmed());
             }
         }
@@ -675,10 +736,10 @@ fn i2c_command(ctl: &mut Control, command: &I2cCommands, non_interactive: bool) 
             if !(1..=512).contains(len) {
                 bail!(CliError::Rejected(format!("{} bytes: 1..512 per read", len)));
             }
-            let mut bus = bus::Bus::open(ctl, &bus_opts(b), non_interactive)?;
+            let mut bus = open_bus(ctl, b, non_interactive)?;
             let w = reg.as_ref().map_or(&[][..], |r| &r.0[..]);
             let data = bus.xfer_ok(*addr, w, *len)?;
-            for l in bus::hexdump(0, &data) {
+            for l in bugslayer::hexdump(0, &data) {
                 println!("{}", l);
             }
         }
@@ -687,7 +748,7 @@ fn i2c_command(ctl: &mut Control, command: &I2cCommands, non_interactive: bool) 
             if bytes.len() > 512 {
                 bail!(CliError::Rejected(format!("{} bytes: at most 512 per write", bytes.len())));
             }
-            let mut bus = bus::Bus::open(ctl, &bus_opts(b), non_interactive)?;
+            let mut bus = open_bus(ctl, b, non_interactive)?;
             bus.xfer_ok(*addr, &bytes, 0)?;
             println!("wrote {} bytes to 0x{:02x}", bytes.len(), addr);
         }
@@ -726,7 +787,7 @@ fn deckctrl_command(
     };
     match command {
         DeckctrlCommands::Scan { bus: b } => {
-            let mut bus = bus::Bus::open(ctl, &bus_opts(b), non_interactive)?;
+            let mut bus = open_bus(ctl, b, non_interactive)?;
             let found = deckctrl::enumerate(&mut bus)?;
             drop(bus);
             if found.is_empty() {
@@ -746,7 +807,7 @@ fn deckctrl_command(
             save(config, &found.into_iter().map(|(f, _)| f).collect::<Vec<_>>());
         }
         DeckctrlCommands::Reset { bus: b } => {
-            let mut bus = bus::Bus::open(ctl, &bus_opts(b), non_interactive)?;
+            let mut bus = open_bus(ctl, b, non_interactive)?;
             let any = deckctrl::reset_all(&mut bus)?;
             drop(bus);
             save(config, &[]);
@@ -756,23 +817,25 @@ fn deckctrl_command(
         | DeckctrlCommands::Gpio { deck: d, .. }
         | DeckctrlCommands::Read { deck: d, .. }
         | DeckctrlCommands::Write { deck: d, .. } => {
-            let mut bus = bus::Bus::open(ctl, &bus_opts(&d.bus), non_interactive)?;
-            let (decks, fresh) = deckctrl::decks(&mut bus, &cache, false)?;
-            let f = deckctrl::pick(&decks, d.deck.as_deref(), non_interactive)?.clone();
+            let mut bus = open_bus(ctl, &d.bus, non_interactive)?;
+            let (decks, fresh) = deckctrl::decks(&mut bus, &cache, false, || {
+                eprintln!("{} enumerating deck controllers (resets them)", "deckctrl".cyan())
+            })?;
+            let f = pick_deckctrl(&decks, d.deck.as_deref(), non_interactive)?.clone();
             match command {
                 DeckctrlCommands::Info { .. } => {
                     let info = deckctrl::Info::parse(&deckctrl::read_reg(&mut bus, f.addr, deckctrl::REG_INFO, deckctrl::INFO_LEN)?);
                     print_deckctrl_info(&f, &info);
                     let (dir, value) = deckctrl::gpio_read(&mut bus, f.addr)?;
                     println!();
-                    for l in deckctrl::gpio_table(dir, value) {
+                    for l in gpio_table(dir, value) {
                         println!("{}", l);
                     }
                 }
                 DeckctrlCommands::Gpio { command: g, .. } => gpio_command(&mut bus, f.addr, g.as_ref(), non_interactive)?,
                 DeckctrlCommands::Read { reg, len, .. } => {
                     let data = deckctrl::read_reg(&mut bus, f.addr, *reg, *len)?;
-                    for l in bus::hexdump(*reg as u32, &data) {
+                    for l in bugslayer::hexdump(*reg as u32, &data) {
                         println!("{}", l);
                     }
                 }
@@ -806,7 +869,7 @@ fn gpio_command(bus: &mut bus::Bus, addr: u8, command: Option<&GpioCommands>, no
         }
         None if non_interactive => (dir, value),
         None => {
-            for l in deckctrl::gpio_table(dir, value) {
+            for l in gpio_table(dir, value) {
                 println!("{}", l);
             }
             let labels: Vec<String> = deckctrl::GPIO_PINS
@@ -840,16 +903,9 @@ fn gpio_command(bus: &mut bus::Bus, addr: u8, command: Option<&GpioCommands>, no
             }
         }
     };
-    // Level first, then direction: a pin turned into an output comes up at
-    // the level it was given.
-    if new_value != value {
-        deckctrl::gpio_write_value(bus, addr, new_value)?;
-    }
-    if new_dir != dir {
-        deckctrl::gpio_write_dir(bus, addr, new_dir)?;
-    }
+    deckctrl::gpio_set(bus, addr, (dir, value), (new_dir, new_value))?;
     let (dir, value) = deckctrl::gpio_read(bus, addr)?;
-    for l in deckctrl::gpio_table(dir, value) {
+    for l in gpio_table(dir, value) {
         println!("{}", l);
     }
     Ok(())
@@ -880,4 +936,20 @@ fn list(config: &Config) -> Result<()> {
         println!("  {} an RP2350 in BOOTSEL (2e8a:000f) is on the bus", "note".yellow());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_bytes_and_hex() {
+        assert_eq!(parse_byte("0x44"), Ok(0x44));
+        assert_eq!(parse_byte("68"), Ok(68));
+        assert!(parse_byte("0x144").is_err());
+        assert_eq!(parse_hex("1900").unwrap().0, vec![0x19, 0x00]);
+        assert_eq!(parse_hex("0x19, 0x00 ab").unwrap().0, vec![0x19, 0x00, 0xab]);
+        assert!(parse_hex("190").is_err());
+        assert!(parse_hex("zz").is_err());
+    }
 }

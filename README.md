@@ -10,7 +10,12 @@ protocol (`docs/protocol.md` there) and writes the same sigrok `.sr` files.
 
 ## Install
 
+The deck protocol lives in [bugslayer-lib](../bugslayer-lib) (crate
+`bugslayer`, shared with bugslayer-ui), which is expected next to this
+repository:
+
 ```
+git clone git@github.com:evoggy/bugslayer-lib.git ../bugslayer-lib   # once
 cargo install --path .
 ```
 
@@ -175,9 +180,14 @@ exit code 30 and names the missing argument.
 |---|---|
 | `src/cli.rs` | The clap command tree, shared with `build.rs` via `include!` |
 | `build.rs` | Generates completion scripts and splices in `completions/addendum.*` |
-| `src/device.rs` | Finding decks (DB11/DB12/DB13 pairing), the ASCII control channel |
-| `src/stream.rs` | Block format and the session verifier |
-| `src/capture.rs` | Reader thread, capture loop, summary |
-| `src/sigrok.rs` | Streaming `.sr` writer and reader |
-| `src/spi.rs` | sck8 SPI decode, timed and cross-checked against raw16 |
+| `src/main.rs` | Commands, prompts and output on top of `bugslayer` |
+| `src/capture.rs` | Capture loop and summary (the USB reader is `bugslayer::pipe`) |
+| `src/uart.rs` | Live UART printing (the receiver is `bugslayer::uart`) |
+| `src/swo.rs` | SWO printing (ITM decoding and the SWD keeper are `bugslayer::swo`) |
+| `src/update.rs` | `bsly update` talking (the work is `bugslayer::update`) |
 | `src/console.rs` | The interactive `raw` console |
+| `src/error.rs` | Exit codes for `CliError` and `bugslayer::Error` |
+
+Device discovery, the control channel, the block format and verifier, `.sr`
+files, SPI decoding, the I2C bus, DeckCtrl, SWO and firmware releases are in
+bugslayer-lib.

@@ -8,14 +8,12 @@
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
-use nusb::transfer::{Bulk, In, TransferError};
-use nusb::MaybeFuture;
 
 use crate::device::{self, Control, Deck};
 use crate::error::CliError;
@@ -23,28 +21,7 @@ use crate::sigrok::SrWriter;
 use crate::spi;
 use crate::stream::{Event, Verifier, BLOCK_SIZE, CHANNEL_NAMES};
 
-/// The RP2350's own Full-Speed sink tops out around 768 kB/s.
-pub const USB_MAX_RATE: u32 = 380_000;
-
-const USB_ITF: u8 = 2;
-const USB_EP: u8 = 0x83;
-const FX2_ITF: u8 = 0;
-const FX2_EP: u8 = 0x86;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Sink {
-    Usb,
-    Fx2,
-}
-
-impl Sink {
-    pub fn name(self) -> &'static str {
-        match self {
-            Sink::Usb => "usb",
-            Sink::Fx2 => "fx2",
-        }
-    }
-}
+pub use bugslayer::pipe::{start_reader, Msg, Sink, USB_MAX_RATE};
 
 pub struct Options {
     pub rate: u32,
@@ -55,89 +32,6 @@ pub struct Options {
     pub spi: bool,
     pub spi_show: usize,
     pub no_overrun: bool,
-}
-
-pub enum Msg {
-    Data(Vec<u8>),
-    Error(String),
-}
-
-pub struct Reader {
-    pub stop: Arc<AtomicBool>,
-    pub thread: std::thread::JoinHandle<u64>,
-    pub rx: mpsc::Receiver<Msg>,
-}
-
-/// Start reading `ep` of `itf`. Returns once the transfers are queued.
-pub fn start_reader(info: &nusb::DeviceInfo, sink: Sink) -> Result<Reader> {
-    let (itf, ep, n_xfers, xfer_size) = match sink {
-        // One block per transfer: at Full Speed a block is 8 packets, so a
-        // transfer completes after every block and nothing waits in a
-        // part-filled one.
-        Sink::Usb => (USB_ITF, USB_EP, 32, BLOCK_SIZE),
-        // One packet is one block. The deck ends a transfer with a
-        // zero-length packet whenever it goes quiet, so no timeout is needed
-        // (cancelling a part-filled High Speed transfer can lose packets).
-        Sink::Fx2 => (FX2_ITF, FX2_EP, 64, 32 * BLOCK_SIZE),
-    };
-    let dev = info.open().wait().context("opening the capture USB device")?;
-    let intf = dev.claim_interface(itf).wait().context("claiming the capture interface")?;
-    let mut ep = intf.endpoint::<Bulk, In>(ep).context("opening the capture endpoint")?;
-    let stop = Arc::new(AtomicBool::new(false));
-    let (tx, rx) = mpsc::channel();
-    for _ in 0..n_xfers {
-        let b = ep.allocate(xfer_size);
-        ep.submit(b);
-    }
-    let stop2 = stop.clone();
-    let thread = std::thread::spawn(move || {
-        let _intf = intf; // keep the interface claimed while reading
-        let mut carry: Vec<u8> = Vec::new();
-        let mut short: u64 = 0;
-        let mut handle = |data: &[u8], tx: &mpsc::Sender<Msg>| match sink {
-            Sink::Fx2 => {
-                // A transfer is whole blocks plus at most one short packet:
-                // the deck's PKTEND flush of an earlier session's partial
-                // block. It is never part of this session; drop it.
-                let n = data.len() / BLOCK_SIZE * BLOCK_SIZE;
-                short += (data.len() - n) as u64;
-                if n > 0 {
-                    let _ = tx.send(Msg::Data(data[..n].to_vec()));
-                }
-            }
-            Sink::Usb => {
-                carry.extend_from_slice(data);
-                let n = carry.len() / BLOCK_SIZE * BLOCK_SIZE;
-                if n > 0 {
-                    let _ = tx.send(Msg::Data(carry.drain(..n).collect()));
-                }
-            }
-        };
-        while !stop2.load(Ordering::Relaxed) {
-            let Some(c) = ep.wait_next_complete(Duration::from_millis(100)) else { continue };
-            match c.status {
-                Ok(()) => handle(&c.buffer[..c.actual_len], &tx),
-                Err(TransferError::Disconnected) => {
-                    let _ = tx.send(Msg::Error("the capture device disconnected".into()));
-                    return short;
-                }
-                Err(e) => {
-                    let _ = tx.send(Msg::Error(format!("transfer error: {}", e)));
-                }
-            }
-            let mut b = c.buffer;
-            b.clear();
-            ep.submit(b);
-        }
-        ep.cancel_all();
-        while ep.pending() > 0 {
-            if ep.wait_next_complete(Duration::from_secs(1)).is_none() {
-                break;
-            }
-        }
-        short
-    });
-    Ok(Reader { stop, thread, rx })
 }
 
 fn human_rate(hz: f64) -> String {
@@ -388,8 +282,8 @@ pub fn run(deck: &Deck, ctl: &mut Control, opts: &Options, non_interactive: bool
             println!("spi        no sck8 stream in this session");
         } else {
             let raw16: Vec<u16> = col.raw16.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
-            let d = spi::decode(&col.sck8, Some((&raw16, col.rate)));
-            spi::report(&d, opts.spi_show, true);
+            let d = spi::decode(&col.sck8, Some((&raw16 as &dyn spi::Raw16, col.rate)));
+            report(&d, opts.spi_show, true);
         }
     }
 
@@ -422,4 +316,24 @@ pub fn run(deck: &Deck, ctl: &mut Control, opts: &Options, non_interactive: bool
     }
     println!("\n{}", "PASS".green().bold());
     Ok(())
+}
+
+/// SPI summary lines plus the first `show` transactions.
+pub fn report(d: &spi::Decoded, show: usize, have_raw: bool) {
+    let per: Vec<String> = spi::per_cs(d).iter().map(|(k, n)| format!("{}: {}", k, n)).collect();
+    println!("spi txns   {}  {}", d.txns.len(), per.join("  "));
+    if have_raw {
+        println!(
+            "spi check  {} transactions also decoded from raw16: {} identical, {} different",
+            d.checked,
+            d.checked - d.mismatched,
+            d.mismatched
+        );
+    }
+    for n in d.notes.iter().take(5) {
+        println!("spi note   {}", n);
+    }
+    for t in d.txns.iter().take(show) {
+        println!("{}", spi::format_txn(t));
+    }
 }

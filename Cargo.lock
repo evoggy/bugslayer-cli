@@ -92,10 +92,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "bugslayer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "nusb",
+ "semver",
+ "serde",
+ "serialport",
+ "ureq",
+ "zip",
+]
+
+[[package]]
 name = "bugslayer-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bugslayer",
  "clap",
  "clap_complete",
  "colored",
