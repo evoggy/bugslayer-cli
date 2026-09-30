@@ -184,8 +184,12 @@ pub struct Control {
 impl Control {
     pub fn open(deck: &Deck, debug: bool) -> Result<Control> {
         let path = deck.port()?;
+        // Shared, not exclusive, so a second bsly can drive the deck while one
+        // is capturing (`bsly uart` in one terminal, `bsly deckctrl` in
+        // another). A capture only talks on the port to arm and disarm.
         let port = serialport::new(path, 115_200)
             .timeout(Duration::from_millis(20))
+            .exclusive(false)
             .open()
             .map_err(|e| CliError::Connection(format!("opening {}: {}", path, e)))?;
         Ok(Control { reader: BufReader::new(port), debug })

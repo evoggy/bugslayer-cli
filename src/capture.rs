@@ -57,19 +57,19 @@ pub struct Options {
     pub no_overrun: bool,
 }
 
-enum Msg {
+pub enum Msg {
     Data(Vec<u8>),
     Error(String),
 }
 
-struct Reader {
-    stop: Arc<AtomicBool>,
-    thread: std::thread::JoinHandle<u64>,
-    rx: mpsc::Receiver<Msg>,
+pub struct Reader {
+    pub stop: Arc<AtomicBool>,
+    pub thread: std::thread::JoinHandle<u64>,
+    pub rx: mpsc::Receiver<Msg>,
 }
 
 /// Start reading `ep` of `itf`. Returns once the transfers are queued.
-fn start_reader(info: &nusb::DeviceInfo, sink: Sink) -> Result<Reader> {
+pub fn start_reader(info: &nusb::DeviceInfo, sink: Sink) -> Result<Reader> {
     let (itf, ep, n_xfers, xfer_size) = match sink {
         // One block per transfer: at Full Speed a block is 8 packets, so a
         // transfer completes after every block and nothing waits in a
@@ -206,8 +206,9 @@ impl Collector {
     }
 }
 
-pub fn run(deck: &Deck, ctl: &mut Control, opts: &Options, non_interactive: bool) -> Result<()> {
-    let info = match opts.sink {
+/// The USB device carrying `sink`; offers to bring the FX2 up when it is down.
+pub fn sink_device(deck: &Deck, ctl: &mut Control, sink: Sink, non_interactive: bool) -> Result<nusb::DeviceInfo> {
+    Ok(match sink {
         Sink::Usb => deck.ctrl.clone(),
         Sink::Fx2 => match &deck.fx2 {
             Some(d) => d.clone(),
@@ -221,7 +222,11 @@ pub fn run(deck: &Deck, ctl: &mut Control, opts: &Options, non_interactive: bool
                 device::wait_fx2(&deck.serial, Duration::from_secs(5))?
             }
         },
-    };
+    })
+}
+
+pub fn run(deck: &Deck, ctl: &mut Control, opts: &Options, non_interactive: bool) -> Result<()> {
+    let info = sink_device(deck, ctl, opts.sink, non_interactive)?;
 
     let stop = Arc::new(AtomicBool::new(false));
     {

@@ -41,6 +41,42 @@ fn parse_duration(s: &str) -> Result<std::time::Duration, String> {
     Ok(std::time::Duration::from_secs_f64(v * mult))
 }
 
+/// A byte: `0x44`, `68` or `0b1000100`.
+fn parse_byte(s: &str) -> Result<u8, String> {
+    let t = s.trim();
+    let r = if let Some(h) = t.strip_prefix("0x").or_else(|| t.strip_prefix("0X")) {
+        u8::from_str_radix(h, 16)
+    } else if let Some(b) = t.strip_prefix("0b") {
+        u8::from_str_radix(b, 2)
+    } else {
+        t.parse()
+    };
+    r.map_err(|_| format!("'{}' is not a byte (e.g. 0x44)", s))
+}
+
+/// A 16-bit register address, hex with or without 0x: `1900`, `0x1900`.
+fn parse_reg(s: &str) -> Result<u16, String> {
+    let t = s.trim();
+    let h = t.strip_prefix("0x").or_else(|| t.strip_prefix("0X")).unwrap_or(t);
+    u16::from_str_radix(h, 16).map_err(|_| format!("'{}' is not a register address (hex, e.g. 1900)", s))
+}
+
+/// Bytes given as hex on the command line.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Bytes(Vec<u8>);
+
+/// Hex bytes, with or without spaces/commas/0x: `1900`, `"19 00"`, `0x19,0x00`.
+fn parse_hex(s: &str) -> Result<Bytes, String> {
+    let cleaned: String = s
+        .split([' ', ',', ':'])
+        .map(|t| t.trim_start_matches("0x").trim_start_matches("0X"))
+        .collect();
+    if cleaned.is_empty() || cleaned.len() % 2 != 0 || !cleaned.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err(format!("'{}' is not hex bytes (e.g. 1900 or \"19 00\")", s));
+    }
+    Ok(Bytes((0..cleaned.len() / 2).map(|i| u8::from_str_radix(&cleaned[2 * i..2 * i + 2], 16).unwrap()).collect()))
+}
+
 // "Exit codes:" mirrors clap's default header style (bold + underline).
 const HELP_EPILOG: &str = "\x1b[1m\x1b[4mExit codes:\x1b[0m
    0  success
@@ -127,6 +163,21 @@ enum Commands {
         #[clap(subcommand)]
         command: DecodeCommands,
     },
+
+    /// Raw I2C on the expansion port, with the deck as master
+    I2c {
+        #[clap(subcommand)]
+        command: I2cCommands,
+    },
+
+    /// Deck controllers (DeckCtrl) on the expansion-port I2C bus
+    Deckctrl {
+        #[clap(subcommand)]
+        command: DeckctrlCommands,
+    },
+
+    /// Print what UART lines on the expansion port carry (sniffed, never driven)
+    Uart(UartOptions),
 
     /// Send raw control-channel lines; with none, open an interactive console
     Raw {
@@ -265,6 +316,215 @@ enum DecodeCommands {
         #[clap(long, value_enum)]
         cs: Option<ChipSelect>,
     },
+}
+
+/// How to get onto the expansion-port I2C bus.
+#[derive(Debug, Args)]
+struct BusArgs {
+    /// SCL rate (the Crazyflie runs the deck bus at 400 kHz)
+    #[clap(long, default_value = "400k", value_parser = parse_rate, value_name = "RATE")]
+    i2c_rate: u32,
+
+    /// Switch the port's VCC on without asking if it is unpowered
+    #[clap(long)]
+    power: bool,
+
+    /// Drive the bus even though a Crazyflie seems to be its master
+    #[clap(long)]
+    force: bool,
+}
+
+#[derive(Debug, Subcommand)]
+enum I2cCommands {
+    /// List the addresses that acknowledge (skips the DeckCtrl reset/listen
+    /// addresses 0x41/0x42, which have side effects)
+    Scan {
+        #[clap(flatten)]
+        bus: BusArgs,
+    },
+    /// Read bytes, optionally writing a register address first (repeated START)
+    Read {
+        /// 7-bit address, e.g. 0x44
+        #[clap(value_parser = parse_byte)]
+        addr: u8,
+        /// How many bytes (1-512)
+        len: usize,
+        /// Bytes to write first, e.g. 1900 for a 16-bit register
+        #[clap(long, value_parser = parse_hex, value_name = "HEX")]
+        reg: Option<Bytes>,
+        #[clap(flatten)]
+        bus: BusArgs,
+    },
+    /// Write bytes
+    Write {
+        /// 7-bit address, e.g. 0x44
+        #[clap(value_parser = parse_byte)]
+        addr: u8,
+        /// Bytes, e.g. 10 00 ff or 1000ff
+        #[clap(value_parser = parse_hex, num_args = 1.., required = true)]
+        data: Vec<Bytes>,
+        #[clap(flatten)]
+        bus: BusArgs,
+    },
+    /// Clock SCL until a stuck device releases SDA
+    Recover,
+}
+
+/// Which deck controller, and how to reach the bus.
+#[derive(Debug, Args)]
+struct DeckArgs {
+    /// Address (0x44), index (0), name or CPU ID prefix; asks when several
+    #[clap(short = 'D', long, value_name = "DECK")]
+    deck: Option<String>,
+
+    #[clap(flatten)]
+    bus: BusArgs,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum Direction {
+    In,
+    Out,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum Level {
+    High,
+    Low,
+}
+
+#[derive(Debug, Subcommand)]
+enum DeckctrlCommands {
+    /// Enumerate the deck controllers as a Crazyflie does (resets them all)
+    Scan {
+        #[clap(flatten)]
+        bus: BusArgs,
+    },
+    /// Identification page, CPU ID and GPIO state of one deck
+    Info {
+        #[clap(flatten)]
+        deck: DeckArgs,
+    },
+    /// Show or set the deck controller's GPIOs (prompts when omitted)
+    Gpio {
+        #[clap(subcommand)]
+        command: Option<GpioCommands>,
+        #[clap(flatten)]
+        deck: DeckArgs,
+    },
+    /// Read registers
+    Read {
+        /// Register address, hex (e.g. 1900)
+        #[clap(value_parser = parse_reg)]
+        reg: u16,
+        /// How many bytes
+        len: usize,
+        #[clap(flatten)]
+        deck: DeckArgs,
+    },
+    /// Write registers
+    Write {
+        /// Register address, hex (e.g. 1f00)
+        #[clap(value_parser = parse_reg)]
+        reg: u16,
+        /// Bytes, e.g. de ad be ef or deadbeef
+        #[clap(value_parser = parse_hex, num_args = 1.., required = true)]
+        data: Vec<Bytes>,
+        #[clap(flatten)]
+        deck: DeckArgs,
+    },
+    /// Reset every deck controller to its power-on state
+    Reset {
+        #[clap(flatten)]
+        bus: BusArgs,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum GpioCommands {
+    /// Direction and level of every GPIO
+    Show,
+    /// Make GPIOs inputs or outputs
+    Dir {
+        /// GPIOs: 3, 0,4,12, 0-3, PA4, all
+        pins: String,
+        #[clap(value_enum)]
+        dir: Direction,
+    },
+    /// Set the output level (takes effect on outputs)
+    Level {
+        /// GPIOs: 3, 0,4,12, 0-3, PA4, all
+        pins: String,
+        #[clap(value_enum)]
+        level: Level,
+    },
+    /// Drive GPIOs: set the level, then make them outputs (no glitch)
+    Out {
+        /// GPIOs: 3, 0,4,12, 0-3, PA4, all
+        pins: String,
+        #[clap(value_enum)]
+        level: Level,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum Signal {
+    #[value(name = "IO_1")]
+    Io1,
+    #[value(name = "IO_2")]
+    Io2,
+    #[value(name = "IO_3")]
+    Io3,
+    #[value(name = "IO_4")]
+    Io4,
+    #[value(name = "MISO")]
+    Miso,
+    #[value(name = "OW")]
+    Ow,
+    #[value(name = "SCK")]
+    Sck,
+    #[value(name = "MOSI")]
+    Mosi,
+    #[value(name = "WKUP")]
+    Wkup,
+    #[value(name = "N_IO_1")]
+    NIo1,
+    #[value(name = "TX2")]
+    Tx2,
+    #[value(name = "RX2")]
+    Rx2,
+    #[value(name = "TX1")]
+    Tx1,
+    #[value(name = "RX1")]
+    Rx1,
+    #[value(name = "SDA")]
+    Sda,
+    #[value(name = "SCL")]
+    Scl,
+}
+
+#[derive(Debug, Args)]
+struct UartOptions {
+    /// Lines to decode (named as on the Crazyflie: RX1 is what a deck sends
+    /// the CF on UART1)
+    #[clap(short, long, value_enum, value_delimiter = ',', default_value = "TX1,RX1,TX2,RX2")]
+    line: Vec<Signal>,
+
+    /// Baud rate
+    #[clap(short, long, default_value_t = 115200)]
+    baud: u32,
+
+    /// Sample rate; default 16x the baud rate, at least 1 Msps
+    #[clap(short, long, value_parser = parse_rate)]
+    rate: Option<u32>,
+
+    /// How long to listen; until Ctrl-C when omitted
+    #[clap(short = 't', long, value_parser = parse_duration)]
+    duration: Option<std::time::Duration>,
+
+    /// Print bytes as hex instead of text
+    #[clap(long)]
+    hex: bool,
 }
 
 #[derive(Debug, Subcommand)]

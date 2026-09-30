@@ -45,6 +45,9 @@ lists USB devices).
 | `bsly fx2 [up\|down\|reboot\|boot [c2\|c0\|rom]\|status]` | FX2 pipe; `up` waits for it to enumerate |
 | `bsly capture` | Record: arm, stream, verify, write `.sr` |
 | `bsly decode spi FILE [--cs IO_3]` | SPI transactions from a capture made with `--spi` |
+| `bsly i2c scan\|read\|write\|recover` | Raw I2C on the expansion port, the deck as master |
+| `bsly deckctrl scan\|info\|gpio\|read\|write\|reset` | Deck controllers (DeckCtrl), enumerated as a Crazyflie does it |
+| `bsly uart [-l RX1] [-b 1000000]` | Live UART decode of expansion-port lines (sniffed, never driven) |
 | `bsly raw [LINE...]` | Raw control-channel lines; with none, an interactive console with Tab completion |
 
 ### Capture
@@ -69,6 +72,41 @@ listed in the summary. `--no-overrun` turns loss into a failure.
 
 The FX2 is read with 64 transfers of 16 KB always in flight on a separate
 thread. Measured on rev A: 35.3 MB/s, 16.67 Msps, zero loss.
+
+### DeckCtrl and I2C
+
+The firmware only moves bytes (`i2c on|off|xfer|recover`); the DeckCtrl
+protocol lives in `src/deckctrl.rs`. Before touching the bus `bsly` checks the
+port: if VCC is present but the deck did not switch it on, a Crazyflie is the
+master and it refuses (`--force` overrides). Standalone it offers to switch VCC
+on (`--power` does it without asking) and turns the I2C pull-ups on. The master
+is switched off again after every command, leaving the pins Hi-Z.
+
+```
+bsly deckctrl scan                       # reset + enumerate, like the CF (0x44..)
+bsly deckctrl info
+bsly deckctrl gpio                       # table, then pick pins and what to do
+bsly deckctrl gpio out 12 high           # level first, then output: no glitch
+bsly deckctrl gpio dir 0-3 in
+bsly deckctrl read 1900 12 -D 0x44
+bsly i2c read 0x44 32 --reg 0000
+```
+
+Enumerated addresses are cached per deck in the settings file. They are checked
+by CPU ID before use; only if one no longer answers does `bsly` enumerate again,
+which resets every controller (and their GPIO state).
+
+GPIO numbers are DeckCtrl indices as in deck-ctrl-firmware today (0 = PA0 …
+12 = PC15). Crazyflie drivers written before crazyflie-firmware 9cf9d86c used
+an older numbering.
+
+### UART
+
+`bsly uart` samples the port through the capture pipe (16x the baud rate, at
+least 1 Msps; the FX2 when that is above ~380 ksps) and decodes 8N1 on the host.
+It prints raw text for one line, or line-prefixed text for several (default:
+TX1, RX1, TX2, RX2). The control port is opened shared, so another `bsly` can
+power and configure a deck while `bsly uart` listens.
 
 ## Interactivity
 
