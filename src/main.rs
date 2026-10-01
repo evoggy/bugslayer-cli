@@ -349,7 +349,13 @@ fn run() -> Result<()> {
             let Some(sck8) = f.sck8 else {
                 bail!(CliError::NotFound(format!("{} has no sck8 stream (capture with --spi)", file.display())));
             };
-            let d = spi::decode(&sck8, Some((&f.raw16 as &dyn spi::Raw16, f.rate_hz as f64)));
+            let mask = cs.map(|c| match c {
+                ChipSelect::Io1 => 0x1,
+                ChipSelect::Io2 => 0x2,
+                ChipSelect::Io3 => 0x4,
+                ChipSelect::Io4 => 0x8,
+            });
+            let d = spi::decode_cs(&sck8, Some((&f.raw16 as &dyn spi::Raw16, f.rate_hz as f64)), mask);
             capture::report(&d, 0, true);
             let want = cs.map(|c| c.to_possible_value().unwrap().get_name().to_string());
             for t in d.txns.iter().filter(|t| want.as_ref().is_none_or(|w| &t.cs == w)) {

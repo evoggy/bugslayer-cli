@@ -370,7 +370,9 @@ enum DecodeCommands {
         /// The .sr file
         #[clap(value_hint = ValueHint::FilePath)]
         file: std::path::PathBuf,
-        /// Only transactions on this chip select
+        /// Only transactions on this chip select. The other IO lines are then
+        /// left out of the decode; without it, the lines that change in the
+        /// middle of bytes are (e.g. IO_3 on a Flow 3.0, its flash chip select)
         #[clap(long, value_enum)]
         cs: Option<ChipSelect>,
     },
