@@ -1,6 +1,6 @@
 [package]
 name = "bugslayer-cli"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Marcus Eliasson <marcus@bitcraze.io>"]
 description = "Bugslayer deck command-line client"
