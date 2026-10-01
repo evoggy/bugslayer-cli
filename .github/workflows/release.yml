@@ -1,0 +1,255 @@
+name: Release
+
+# Builds bscli for Linux and macOS (x86_64 + arm64), attaches tarballs and
+# .debs to a GitHub release, then publishes the debs to the evoggy APT repo
+# (evoggy/packages) and the formula to the evoggy Homebrew tap
+# (evoggy/homebrew-tap).
+#
+# bugslayer-lib is a path dependency (../bugslayer-lib), so both repos are
+# checked out side by side and every step runs inside bugslayer-cli/.
+#
+# Secrets: PACKAGING_TOKEN, a token with contents:write on evoggy/packages
+# and evoggy/homebrew-tap.
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build release for'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+    working-directory: bugslayer-cli
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Get version from tag
+        id: get_version
+        working-directory: .
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "version=$INPUT_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.get_version.outputs.version }}
+          path: bugslayer-cli
+
+      - name: Verify Cargo.toml version matches tag
+        env:
+          TAG_VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          CARGO_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          if [ "$CARGO_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Version mismatch! Cargo.toml has $CARGO_VERSION but tag is $TAG_VERSION"
+            exit 1
+          fi
+          echo "Version check passed: $CARGO_VERSION"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          name: ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  build:
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          # Linux builds run on 22.04 so the binaries need glibc >= 2.35 only
+          # (Ubuntu 22.04+, Debian 12, Raspberry Pi OS bookworm).
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+            deb: true
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04-arm
+            deb: true
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+
+    runs-on: ${{ matrix.os }}
+    env:
+      NAME: bscli-${{ matrix.target }}.tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.version }}
+          path: bugslayer-cli
+
+      - uses: actions/checkout@v4
+        with:
+          repository: evoggy/bugslayer-lib
+          path: bugslayer-lib
+
+      - name: Record bugslayer-lib revision
+        working-directory: bugslayer-lib
+        run: echo "bugslayer-lib $(git rev-parse HEAD)" | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libudev-dev
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package
+        run: |
+          mkdir -p dist/bin
+          cp target/${{ matrix.target }}/release/bscli dist/bin/
+          mkdir -p dist/bin/completions
+          cp completions/bscli.bash completions/_bscli completions/bscli.fish dist/bin/completions/
+          tar czf "$NAME" -C dist/bin bscli completions
+          shasum -a 256 "$NAME" > "$NAME.sha256"
+
+      - name: Build deb
+        if: matrix.deb
+        run: |
+          cargo install cargo-deb --locked
+          cargo deb --target ${{ matrix.target }} --no-build
+          cp target/${{ matrix.target }}/debian/*.deb .
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.create-release.outputs.version }}
+          files: |
+            bugslayer-cli/${{ env.NAME }}
+            bugslayer-cli/${{ env.NAME }}.sha256
+            bugslayer-cli/*.deb
+
+  publish-apt:
+    # Hand the freshly-released debs to the evoggy APT repo, which pulls them
+    # from this release, re-signs the pool and redeploys.
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger APT repository publish
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PACKAGING_TOKEN }}
+          repository: evoggy/packages
+          event-type: publish-deb
+          client-payload: |
+            {"repo": "${{ github.repository }}", "tag": "${{ needs.create-release.outputs.version }}", "app": "bscli"}
+
+  update-homebrew:
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: homebrew-tap
+    steps:
+      - name: Checkout tap repository
+        uses: actions/checkout@v4
+        with:
+          repository: evoggy/homebrew-tap
+          token: ${{ secrets.PACKAGING_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update formula
+        env:
+          VERSION: ${{ needs.create-release.outputs.version }}
+          BASE: https://github.com/${{ github.repository }}/releases/download/${{ needs.create-release.outputs.version }}
+        run: |
+          sha() { curl -fsSL "$BASE/bscli-$1.tar.gz.sha256" | awk '{print $1}'; }
+          MACOS_ARM64_SHA=$(sha aarch64-apple-darwin)
+          MACOS_X64_SHA=$(sha x86_64-apple-darwin)
+          LINUX_ARM64_SHA=$(sha aarch64-unknown-linux-gnu)
+          LINUX_X64_SHA=$(sha x86_64-unknown-linux-gnu)
+
+          mkdir -p Formula
+          cat > Formula/bscli.rb <<EOF
+          class Bscli < Formula
+            desc "CLI for the Bugslayer debug deck for the Crazyflie"
+            homepage "https://github.com/evoggy/bugslayer-cli"
+            version "${VERSION}"
+            license "MIT OR Apache-2.0"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "${BASE}/bscli-aarch64-apple-darwin.tar.gz"
+                sha256 "${MACOS_ARM64_SHA}"
+              else
+                url "${BASE}/bscli-x86_64-apple-darwin.tar.gz"
+                sha256 "${MACOS_X64_SHA}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "${BASE}/bscli-aarch64-unknown-linux-gnu.tar.gz"
+                sha256 "${LINUX_ARM64_SHA}"
+              else
+                url "${BASE}/bscli-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "${LINUX_X64_SHA}"
+              end
+            end
+
+            def install
+              bin.install "bscli"
+              bash_completion.install "completions/bscli.bash" => "bscli"
+              zsh_completion.install "completions/_bscli"
+              fish_completion.install "completions/bscli.fish"
+            end
+
+            def caveats
+              on_linux do
+                <<~EOS
+                  USB access to the deck needs udev rules (the apt package installs them):
+                    https://github.com/evoggy/bugslayer-cli/blob/main/udev/70-bugslayer-deck.rules
+                  Copy the file to /etc/udev/rules.d/, then run:
+                    sudo udevadm control --reload-rules && sudo udevadm trigger
+                EOS
+              end
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/bscli --version")
+            end
+          end
+          EOF
+          rm -f Formula/.gitkeep
+
+      - name: Commit and push
+        env:
+          VERSION: ${{ needs.create-release.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A Formula
+          git commit -m "Update bscli to ${VERSION}" || echo "No changes to commit"
+          git push

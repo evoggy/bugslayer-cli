@@ -10,6 +10,37 @@ protocol (`docs/protocol.md` there) and writes the same sigrok `.sr` files.
 
 ## Install
 
+Prebuilt for Linux and macOS, x86_64 and arm64.
+
+Debian/Ubuntu/Raspberry Pi OS (also installs the udev rules for USB access,
+and adds the repo so `apt upgrade` picks up new releases):
+
+```
+curl -fsSL https://evoggy.github.io/packages/apt/evoggy.gpg.key \
+  | sudo gpg --dearmor -o /usr/share/keyrings/evoggy-archive-keyring.gpg
+echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/evoggy-archive-keyring.gpg] https://evoggy.github.io/packages/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/evoggy.list
+sudo apt update && sudo apt install bscli
+```
+
+Homebrew (macOS/Linux):
+
+```
+brew install evoggy/tap/bscli
+```
+
+On Linux without the apt package, install the udev rules yourself:
+
+```
+sudo cp udev/70-bugslayer-deck.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+Tarballs and `.deb`s are also on the
+[releases page](https://github.com/evoggy/bugslayer-cli/releases).
+
+### From source
+
 The deck protocol lives in [bugslayer-lib](../bugslayer-lib) (crate
 `bugslayer`, shared with bugslayer-ui), which is expected next to this
 repository:
@@ -19,8 +50,8 @@ git clone git@github.com:evoggy/bugslayer-lib.git ../bugslayer-lib   # once
 cargo install --path .
 ```
 
-Access to the deck's USB devices needs the udev rules from
-`bugslayer-deck-firmware/host/99-bugslayer-deck.rules`.
+Access to the deck's USB devices needs the udev rules in
+[`udev/70-bugslayer-deck.rules`](udev/70-bugslayer-deck.rules) (see above).
 
 Shell completion scripts are generated into `completions/` by every build:
 

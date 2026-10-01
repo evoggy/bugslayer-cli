@@ -1,0 +1,6 @@
+# Bugslayer deck: user access to all three USB devices on the board.
+# Numbered below 73-seat-late.rules so the uaccess tag takes effect.
+# DB11 RP2040 CMSIS-DAP probe, DB12 RP2350 control plane, DB13 FX2 capture stream
+SUBSYSTEM=="usb", ATTRS{idVendor}=="35f0", ATTRS{idProduct}=="db1[123]", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+# Unprogrammed FX2 boot ROM, as the deck's FX2 appears during bring-up (fx2tool RAM-load)
+SUBSYSTEM=="usb", ATTRS{idVendor}=="04b4", ATTRS{idProduct}=="8613", MODE="0660", GROUP="plugdev", TAG+="uaccess"
