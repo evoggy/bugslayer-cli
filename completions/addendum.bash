@@ -1,10 +1,10 @@
 
-# ---- bsly dynamic completion --------------------------------------------
+# ---- bscli dynamic completion --------------------------------------------
 # Appended by build.rs to the clap-generated bash completion. Adds the serial
-# numbers of the connected decks for `--serial`, from `bsly __complete`, which
+# numbers of the connected decks for `--serial`, from `bscli __complete`, which
 # only lists USB devices and never talks to a deck.
-_bsly_dynamic() {
-    _bsly "$@"
+_bscli_dynamic() {
+    _bscli "$@"
 
     # Drop clap's positional metavar placeholders (e.g. [LINES]...).
     local _c _kept=()
@@ -24,7 +24,7 @@ _bsly_dynamic() {
         COMPREPLY=()
         while IFS= read -r c; do
             [[ -n "$c" ]] && COMPREPLY+=("$c")
-        done < <(bsly __complete serials "$cur" 2>/dev/null)
+        done < <(bscli __complete serials "$cur" 2>/dev/null)
     fi
 }
-complete -F _bsly_dynamic -o bashdefault -o default bsly
+complete -F _bscli_dynamic -o bashdefault -o default bscli

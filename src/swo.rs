@@ -41,7 +41,7 @@ pub struct Options {
     pub no_swd: bool,
 }
 
-/// The keeper's news, as bsly always printed it.
+/// The keeper's news, as bscli always printed it.
 fn keeper_event(swd: u8, e: KeeperEvent) {
     match e {
         KeeperEvent::CannotOpen(e) => {

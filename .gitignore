@@ -1,4 +1,4 @@
 /target
-/completions/_bsly*
-/completions/bsly.*
+/completions/_bscli*
+/completions/bscli.*
 *.sr

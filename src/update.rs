@@ -1,4 +1,4 @@
-// `bsly update`: compare the deck's firmware with the latest GitHub releases and
+// `bscli update`: compare the deck's firmware with the latest GitHub releases and
 // install new UF2s through the chips' USB bootloaders (bugslayer::update does
 // the work; this is the talking).
 //
@@ -33,7 +33,7 @@ pub struct Options {
 
 pub fn run(deck: Option<&Deck>, opts: &Options, non_interactive: bool) -> Result<()> {
     if (opts.tag.is_some() || opts.file.is_some()) && opts.chips.len() != 1 {
-        bail!(CliError::Rejected("--version and --file need one chip: `bsly update rp2350` or `bsly update probe`".into()));
+        bail!(CliError::Rejected("--version and --file need one chip: `bscli update rp2350` or `bscli update probe`".into()));
     }
 
     // What to install, per chip: (release or file name, UF2 bytes).

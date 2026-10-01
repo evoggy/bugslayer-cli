@@ -107,7 +107,7 @@ pub fn sink_device(deck: &Deck, ctl: &mut Control, sink: Sink, non_interactive: 
         Sink::Fx2 => match &deck.fx2 {
             Some(d) => d.clone(),
             None => {
-                crate::require_arg(non_interactive, "a running FX2: bring it up with `bsly fx2 up`")?;
+                crate::require_arg(non_interactive, "a running FX2: bring it up with `bscli fx2 up`")?;
                 let up = inquire::Confirm::new("The FX2 is down. Bring it up?").with_default(true).prompt()?;
                 if !up {
                     bail!(CliError::Connection("the FX2 sink needs the FX2 up".into()));

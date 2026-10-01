@@ -1,4 +1,4 @@
-// CLI definition (clap derive tree) for bsly.
+// CLI definition (clap derive tree) for bscli.
 //
 // This file is `include!`d by both `src/main.rs` (the real binary) and
 // `build.rs` (which generates shell-completion scripts from the same command

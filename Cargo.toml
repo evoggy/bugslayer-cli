@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 build = "build.rs"
 
 [[bin]]
-name = "bsly"
+name = "bscli"
 path = "src/main.rs"
 
 [dependencies]

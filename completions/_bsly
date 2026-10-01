@@ -1,0 +1,1998 @@
+#compdef bsly
+
+autoload -U is-at-least
+
+# ---- bsly dynamic completion --------------------------------------------
+# Inserted by build.rs into the clap-generated zsh completion, which also
+# points the `--serial` action here. `bsly __complete` only lists USB devices
+# and never talks to a deck.
+_bsly_serials() {
+    local -a serials
+    serials=(${(f)"$(bsly __complete serials "$PREFIX" 2>/dev/null)"})
+    compadd -a serials
+}
+_bsly() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_bsly_commands" \
+"*::: :->bugslayer-cli" \
+&& ret=0
+    case $state in
+    (bugslayer-cli)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(select)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(info)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'-w[Refresh continuously until Ctrl-C]' \
+'--watch[Refresh continuously until Ctrl-C]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(pins)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'-w[Refresh continuously until Ctrl-C]' \
+'--watch[Refresh continuously until Ctrl-C]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(power)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'::rail -- Which switch:((vcc\:"Expansion-port VCC"
+vcom\:"Expansion-port VCOM"))' \
+'::state -- On or off:(on off)' \
+&& ret=0
+;;
+(pull)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'::state:(on off)' \
+&& ret=0
+;;
+(fx2)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_bsly__subcmd__fx2_commands" \
+"*::: :->fx2" \
+&& ret=0
+
+    case $state in
+    (fx2)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-fx2-command-$line[1]:"
+        case $line[1] in
+            (up)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(reboot)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(boot)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'::mode:((c2\:"Our firmware (default)"
+c0\:"Our VID/PID only, for fx2tool RAM loads"
+rom\:"Silent EEPROM\: the FX2 boot ROM (04b4\:8613)"))' \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__fx2__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-fx2-help-command-$line[1]:"
+        case $line[1] in
+            (up)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(reboot)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(capture)
+_arguments "${_arguments_options[@]}" : \
+'-r+[Sample rate (e.g. 250k, 4M, 16.67M); the deck uses 150 MHz / integer]:RATE:_default' \
+'--rate=[Sample rate (e.g. 250k, 4M, 16.67M); the deck uses 150 MHz / integer]:RATE:_default' \
+'-t+[How long to record (e.g. 5, 500ms, 2m); until Ctrl-C when omitted]:DURATION:_default' \
+'--duration=[How long to record (e.g. 5, 500ms, 2m); until Ctrl-C when omitted]:DURATION:_default' \
+'-o+[sigrok session file to write (opens in PulseView / sigrok-cli)]:OUTPUT:_files' \
+'--output=[sigrok session file to write (opens in PulseView / sigrok-cli)]:OUTPUT:_files' \
+'--source=[What to sample]:SOURCE:((pins\:"The 16 expansion-port signals"
+counter\:"Synthetic counter\: sample n == n mod 2^16 (pipe test)"))' \
+'--sink=[Which USB pipe carries the data]:SINK:((auto\:"The FX2 when the rate needs it (above ~380 ksps), else the RP2350'\''s USB"
+usb\:"The RP2350'\''s own Full-Speed USB (up to ~380 ksps)"
+fx2\:"The FX2 High-Speed pipe (up to ~17 Msps)"))' \
+'--spi-show=[Print the first N decoded SPI transactions]:N:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--spi[Also record the lines at every rising SCK edge (exact SPI at any speed)]' \
+'--no-overrun[Fail (exit 50) if any samples were lost]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(decode)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_bsly__subcmd__decode_commands" \
+"*::: :->decode" \
+&& ret=0
+
+    case $state in
+    (decode)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-decode-command-$line[1]:"
+        case $line[1] in
+            (spi)
+_arguments "${_arguments_options[@]}" : \
+'--cs=[Only transactions on this chip select]:CS:(IO_1 IO_2 IO_3 IO_4)' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':file -- The .sr file:_files' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__decode__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-decode-help-command-$line[1]:"
+        case $line[1] in
+            (spi)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(i2c)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_bsly__subcmd__i2c_commands" \
+"*::: :->i2c" \
+&& ret=0
+
+    case $state in
+    (i2c)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-i2c-command-$line[1]:"
+        case $line[1] in
+            (scan)
+_arguments "${_arguments_options[@]}" : \
+'--i2c-rate=[SCL rate (the Crazyflie runs the deck bus at 400 kHz)]:RATE:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC on without asking if it is unpowered]' \
+'--force[Drive the bus even though a Crazyflie seems to be its master]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(read)
+_arguments "${_arguments_options[@]}" : \
+'--reg=[Bytes to write first, e.g. 1900 for a 16-bit register]:HEX:_default' \
+'--i2c-rate=[SCL rate (the Crazyflie runs the deck bus at 400 kHz)]:RATE:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC on without asking if it is unpowered]' \
+'--force[Drive the bus even though a Crazyflie seems to be its master]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':addr -- 7-bit address, e.g. 0x44:_default' \
+':len -- How many bytes (1-512):_default' \
+&& ret=0
+;;
+(write)
+_arguments "${_arguments_options[@]}" : \
+'--i2c-rate=[SCL rate (the Crazyflie runs the deck bus at 400 kHz)]:RATE:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC on without asking if it is unpowered]' \
+'--force[Drive the bus even though a Crazyflie seems to be its master]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':addr -- 7-bit address, e.g. 0x44:_default' \
+'*::data -- Bytes, e.g. 10 00 ff or 1000ff:_default' \
+&& ret=0
+;;
+(recover)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__i2c__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-i2c-help-command-$line[1]:"
+        case $line[1] in
+            (scan)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(read)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(write)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(recover)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(deckctrl)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_bsly__subcmd__deckctrl_commands" \
+"*::: :->deckctrl" \
+&& ret=0
+
+    case $state in
+    (deckctrl)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-deckctrl-command-$line[1]:"
+        case $line[1] in
+            (scan)
+_arguments "${_arguments_options[@]}" : \
+'--i2c-rate=[SCL rate (the Crazyflie runs the deck bus at 400 kHz)]:RATE:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC on without asking if it is unpowered]' \
+'--force[Drive the bus even though a Crazyflie seems to be its master]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(info)
+_arguments "${_arguments_options[@]}" : \
+'-D+[Address (0x44), index (0), name or CPU ID prefix; asks when several]:DECK:_default' \
+'--deck=[Address (0x44), index (0), name or CPU ID prefix; asks when several]:DECK:_default' \
+'--i2c-rate=[SCL rate (the Crazyflie runs the deck bus at 400 kHz)]:RATE:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC on without asking if it is unpowered]' \
+'--force[Drive the bus even though a Crazyflie seems to be its master]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(gpio)
+_arguments "${_arguments_options[@]}" : \
+'-D+[Address (0x44), index (0), name or CPU ID prefix; asks when several]:DECK:_default' \
+'--deck=[Address (0x44), index (0), name or CPU ID prefix; asks when several]:DECK:_default' \
+'--i2c-rate=[SCL rate (the Crazyflie runs the deck bus at 400 kHz)]:RATE:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC on without asking if it is unpowered]' \
+'--force[Drive the bus even though a Crazyflie seems to be its master]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_bsly__subcmd__deckctrl__subcmd__gpio_commands" \
+"*::: :->gpio" \
+&& ret=0
+
+    case $state in
+    (gpio)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-deckctrl-gpio-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(dir)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':pins -- GPIOs\: 3, 0,4,12, 0-3, PA4, all:_default' \
+':dir:(in out)' \
+&& ret=0
+;;
+(level)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':pins -- GPIOs\: 3, 0,4,12, 0-3, PA4, all:_default' \
+':level:(high low)' \
+&& ret=0
+;;
+(out)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':pins -- GPIOs\: 3, 0,4,12, 0-3, PA4, all:_default' \
+':level:(high low)' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-deckctrl-gpio-help-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(dir)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(level)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(out)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(read)
+_arguments "${_arguments_options[@]}" : \
+'-D+[Address (0x44), index (0), name or CPU ID prefix; asks when several]:DECK:_default' \
+'--deck=[Address (0x44), index (0), name or CPU ID prefix; asks when several]:DECK:_default' \
+'--i2c-rate=[SCL rate (the Crazyflie runs the deck bus at 400 kHz)]:RATE:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC on without asking if it is unpowered]' \
+'--force[Drive the bus even though a Crazyflie seems to be its master]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':reg -- Register address, hex (e.g. 1900):_default' \
+':len -- How many bytes:_default' \
+&& ret=0
+;;
+(write)
+_arguments "${_arguments_options[@]}" : \
+'-D+[Address (0x44), index (0), name or CPU ID prefix; asks when several]:DECK:_default' \
+'--deck=[Address (0x44), index (0), name or CPU ID prefix; asks when several]:DECK:_default' \
+'--i2c-rate=[SCL rate (the Crazyflie runs the deck bus at 400 kHz)]:RATE:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC on without asking if it is unpowered]' \
+'--force[Drive the bus even though a Crazyflie seems to be its master]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':reg -- Register address, hex (e.g. 1f00):_default' \
+'*::data -- Bytes, e.g. de ad be ef or deadbeef:_default' \
+&& ret=0
+;;
+(reset)
+_arguments "${_arguments_options[@]}" : \
+'--i2c-rate=[SCL rate (the Crazyflie runs the deck bus at 400 kHz)]:RATE:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC on without asking if it is unpowered]' \
+'--force[Drive the bus even though a Crazyflie seems to be its master]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__deckctrl__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-deckctrl-help-command-$line[1]:"
+        case $line[1] in
+            (scan)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(info)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(gpio)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio_commands" \
+"*::: :->gpio" \
+&& ret=0
+
+    case $state in
+    (gpio)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-deckctrl-help-gpio-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(dir)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(level)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(out)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(read)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(write)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(reset)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(uart)
+_arguments "${_arguments_options[@]}" : \
+'*-l+[Lines to decode (named as on the Crazyflie\: RX1 is what a deck sends the CF on UART1)]:LINE:(IO_1 IO_2 IO_3 IO_4 MISO OW SCK MOSI WKUP N_IO_1 TX2 RX2 TX1 RX1 SDA SCL)' \
+'*--line=[Lines to decode (named as on the Crazyflie\: RX1 is what a deck sends the CF on UART1)]:LINE:(IO_1 IO_2 IO_3 IO_4 MISO OW SCK MOSI WKUP N_IO_1 TX2 RX2 TX1 RX1 SDA SCL)' \
+'-b+[Baud rate]:BAUD:_default' \
+'--baud=[Baud rate]:BAUD:_default' \
+'-r+[Sample rate; default 16x the baud rate, at least 1 Msps]:RATE:_default' \
+'--rate=[Sample rate; default 16x the baud rate, at least 1 Msps]:RATE:_default' \
+'-t+[How long to listen; until Ctrl-C when omitted]:DURATION:_default' \
+'--duration=[How long to listen; until Ctrl-C when omitted]:DURATION:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--hex[Print bytes as hex instead of text]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(mux)
+_arguments "${_arguments_options[@]}" : \
+'--wait=[Seconds to wait for a USB device after switching to usb]:WAIT:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'::mode:((uart\:"TX2/RX2 to the deck'\''s UART2 (power-on default)"
+usb\:"TX2/RX2 to the hub'\''s port 4 as USB Full Speed"
+off\:"Disconnected"))' \
+&& ret=0
+;;
+(drive)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':pin:(IO_1 IO_2 IO_3 IO_4)' \
+':level:(low release)' \
+&& ret=0
+;;
+(bridge)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--power[Switch the port'\''s VCC and VCOM on without asking if needed]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':uart -- Which UART:(1 2 both)' \
+':state -- On or off:(on off)' \
+&& ret=0
+;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+'(--file)--version=[Install this release instead of the latest, e.g. 0.8.0 (one chip)]:TAG:_default' \
+'--file=[Install this UF2 instead of a release (one chip)]:FILE:_files' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--check[Only show installed and latest versions]' \
+'--pre[Consider prereleases too]' \
+'--force[Reinstall even when the installed version is current]' \
+'-y[Don'\''t ask before installing]' \
+'--yes[Don'\''t ask before installing]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'::chip -- Which firmware; both when omitted:((rp2350\:"The RP2350 (control, capture; carries the FX2 firmware)"
+probe\:"The RP2040 debug probe"))' \
+&& ret=0
+;;
+(swo)
+_arguments "${_arguments_options[@]}" : \
+'--swd=[Probe port the target is on\: 1 (P1) or 2 (P5); the others have no SWO]:SWD:_default' \
+'-b+[SWO baud rate; must match the target'\''s TPIU (the Crazyflie firmware'\''s CONFIG_DEBUG_PRINT_ON_SWO_BAUDRATE, 2000000 by default)]:BAUD:_default' \
+'--baud=[SWO baud rate; must match the target'\''s TPIU (the Crazyflie firmware'\''s CONFIG_DEBUG_PRINT_ON_SWO_BAUDRATE, 2000000 by default)]:BAUD:_default' \
+'*-p+[ITM stimulus ports to print (DEBUG_PRINT is port 0)]:PORT:_default' \
+'*--port=[ITM stimulus ports to print (DEBUG_PRINT is port 0)]:PORT:_default' \
+'-t+[How long to listen; until Ctrl-C when omitted]:DURATION:_default' \
+'--duration=[How long to listen; until Ctrl-C when omitted]:DURATION:_default' \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--hex[Print payloads as hex instead of text]' \
+'--raw[Print the raw SWO bytes, without decoding ITM]' \
+'--no-swd[Do not switch the target'\''s debug port to SWD (SWO is silent in JTAG mode)]' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(raw)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'*::lines -- Command lines, one per argument, e.g. "fx2 up" stat:_default' \
+&& ret=0
+;;
+(settings)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_bsly__subcmd__settings_commands" \
+"*::: :->settings" \
+&& ret=0
+
+    case $state in
+    (settings)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-settings-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(clear)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__settings__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-settings-help-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(clear)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--serial=[Use the deck with this serial number (instead of the selected one)]:SERIAL:_bsly_serials' \
+'--non-interactive[Disable interactive prompts (auto-set when stdin is not a TTY)]' \
+'-d[Print every control-channel line sent and received]' \
+'--debug[Print every control-channel line sent and received]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':shell -- Shell to generate the completion script for:(bash elvish fish powershell zsh)' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-help-command-$line[1]:"
+        case $line[1] in
+            (list)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(select)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(info)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(pins)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(power)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(pull)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(fx2)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__help__subcmd__fx2_commands" \
+"*::: :->fx2" \
+&& ret=0
+
+    case $state in
+    (fx2)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-help-fx2-command-$line[1]:"
+        case $line[1] in
+            (up)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(down)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(reboot)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(status)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(capture)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(decode)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__help__subcmd__decode_commands" \
+"*::: :->decode" \
+&& ret=0
+
+    case $state in
+    (decode)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-help-decode-command-$line[1]:"
+        case $line[1] in
+            (spi)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(i2c)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__help__subcmd__i2c_commands" \
+"*::: :->i2c" \
+&& ret=0
+
+    case $state in
+    (i2c)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-help-i2c-command-$line[1]:"
+        case $line[1] in
+            (scan)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(read)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(write)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(recover)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(deckctrl)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__help__subcmd__deckctrl_commands" \
+"*::: :->deckctrl" \
+&& ret=0
+
+    case $state in
+    (deckctrl)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-help-deckctrl-command-$line[1]:"
+        case $line[1] in
+            (scan)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(info)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(gpio)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio_commands" \
+"*::: :->gpio" \
+&& ret=0
+
+    case $state in
+    (gpio)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-help-deckctrl-gpio-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(dir)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(level)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(out)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(read)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(write)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(reset)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(uart)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(mux)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(drive)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(bridge)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(swo)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(raw)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(settings)
+_arguments "${_arguments_options[@]}" : \
+":: :_bsly__subcmd__help__subcmd__settings_commands" \
+"*::: :->settings" \
+&& ret=0
+
+    case $state in
+    (settings)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:bsly-help-settings-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(clear)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_bsly_commands] )) ||
+_bsly_commands() {
+    local commands; commands=(
+'list:List connected Bugslayer decks and their USB devices' \
+'select:Pick which deck to use by default when several are connected' \
+'info:Firmware versions, serial number and USB devices of the deck' \
+'status:Capture engine and FX2 link status' \
+'pins:Live level of every expansion-port signal' \
+'power:Switch the deck'\''s high-side power switches (prompts when omitted)' \
+'pull:I2C pull-ups on the expansion port (standalone only; prompts when omitted)' \
+'fx2:Control the FX2 (CBM9002A) capture pipe (prompts when omitted)' \
+'capture:Record the expansion port\: arm, stream, verify and write a sigrok .sr' \
+'decode:Decode a saved capture' \
+'i2c:Raw I2C on the expansion port, with the deck as master' \
+'deckctrl:Deck controllers (DeckCtrl) on the expansion-port I2C bus' \
+'uart:Print what UART lines on the expansion port carry (sniffed, never driven)' \
+'mux:Switch the port'\''s TX2/RX2 between UART2 and USB (the deck'\''s hub port 4, for decks with a USB MCU there\: D- = TX2, D+ = RX2); standalone only' \
+'drive:Hold an IO pin low, e.g. a deck MCU'\''s BOOT line, or release it (open drain, never driven high; standalone only)' \
+'bridge:Bridge the Crazyflie'\''s UART1/UART2 to a serial port of the deck, with the deck standing in for the Crazyflie (standalone only)' \
+'update:Check the deck'\''s firmware against the GitHub releases and install updates through the USB bootloaders (private repos\: \`gh auth login\`)' \
+'swo:Print a target'\''s SWO trace (ITM, e.g. the Crazyflie'\''s DEBUG_PRINT)' \
+'raw:Send raw control-channel lines; with none, open an interactive console' \
+'settings:Local CLI settings' \
+'completions:Generate a shell completion script (printed to stdout)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__bridge_commands] )) ||
+_bsly__subcmd__bridge_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly bridge commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__capture_commands] )) ||
+_bsly__subcmd__capture_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly capture commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__completions_commands] )) ||
+_bsly__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly completions commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl_commands] )) ||
+_bsly__subcmd__deckctrl_commands() {
+    local commands; commands=(
+'scan:Enumerate the deck controllers as a Crazyflie does (resets them all)' \
+'info:Identification page, CPU ID and GPIO state of one deck' \
+'gpio:Show or set the deck controller'\''s GPIOs (prompts when omitted)' \
+'read:Read registers' \
+'write:Write registers' \
+'reset:Reset every deck controller to its power-on state' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly deckctrl commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio_commands() {
+    local commands; commands=(
+'show:Direction and level of every GPIO' \
+'dir:Make GPIOs inputs or outputs' \
+'level:Set the output level (takes effect on outputs)' \
+'out:Drive GPIOs\: set the level, then make them outputs (no glitch)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly deckctrl gpio commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__dir_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__dir_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl gpio dir commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help_commands() {
+    local commands; commands=(
+'show:Direction and level of every GPIO' \
+'dir:Make GPIOs inputs or outputs' \
+'level:Set the output level (takes effect on outputs)' \
+'out:Drive GPIOs\: set the level, then make them outputs (no glitch)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly deckctrl gpio help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__dir_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__dir_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl gpio help dir commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__help_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl gpio help help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__level_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__level_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl gpio help level commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__out_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__out_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl gpio help out commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__show_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__help__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl gpio help show commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__level_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__level_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl gpio level commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__out_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__out_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl gpio out commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__show_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__gpio__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl gpio show commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help_commands() {
+    local commands; commands=(
+'scan:Enumerate the deck controllers as a Crazyflie does (resets them all)' \
+'info:Identification page, CPU ID and GPIO state of one deck' \
+'gpio:Show or set the deck controller'\''s GPIOs (prompts when omitted)' \
+'read:Read registers' \
+'write:Write registers' \
+'reset:Reset every deck controller to its power-on state' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly deckctrl help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio_commands() {
+    local commands; commands=(
+'show:Direction and level of every GPIO' \
+'dir:Make GPIOs inputs or outputs' \
+'level:Set the output level (takes effect on outputs)' \
+'out:Drive GPIOs\: set the level, then make them outputs (no glitch)' \
+    )
+    _describe -t commands 'bsly deckctrl help gpio commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio__subcmd__dir_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio__subcmd__dir_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help gpio dir commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio__subcmd__level_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio__subcmd__level_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help gpio level commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio__subcmd__out_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio__subcmd__out_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help gpio out commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio__subcmd__show_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__gpio__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help gpio show commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__help_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__info_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help info commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__read_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__read_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help read commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__reset_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__reset_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help reset commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__scan_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__scan_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help scan commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__help__subcmd__write_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__help__subcmd__write_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl help write commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__info_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl info commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__read_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__read_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl read commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__reset_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__reset_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl reset commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__scan_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__scan_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl scan commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__deckctrl__subcmd__write_commands] )) ||
+_bsly__subcmd__deckctrl__subcmd__write_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly deckctrl write commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__decode_commands] )) ||
+_bsly__subcmd__decode_commands() {
+    local commands; commands=(
+'spi:SPI transactions from a capture made with --spi' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly decode commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__decode__subcmd__help_commands] )) ||
+_bsly__subcmd__decode__subcmd__help_commands() {
+    local commands; commands=(
+'spi:SPI transactions from a capture made with --spi' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly decode help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__decode__subcmd__help__subcmd__help_commands] )) ||
+_bsly__subcmd__decode__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly decode help help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__decode__subcmd__help__subcmd__spi_commands] )) ||
+_bsly__subcmd__decode__subcmd__help__subcmd__spi_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly decode help spi commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__decode__subcmd__spi_commands] )) ||
+_bsly__subcmd__decode__subcmd__spi_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly decode spi commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__drive_commands] )) ||
+_bsly__subcmd__drive_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly drive commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2_commands] )) ||
+_bsly__subcmd__fx2_commands() {
+    local commands; commands=(
+'up:Serve the boot image, start IFCLK and release reset' \
+'down:Hold the FX2 in reset' \
+'reboot:Down, then up\: the FX2 boots again' \
+'boot:What the emulated EEPROM serves at the next up/reboot' \
+'status:Is the FX2 up and enumerated, and with which serial' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly fx2 commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__boot_commands] )) ||
+_bsly__subcmd__fx2__subcmd__boot_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 boot commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__down_commands] )) ||
+_bsly__subcmd__fx2__subcmd__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 down commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__help_commands] )) ||
+_bsly__subcmd__fx2__subcmd__help_commands() {
+    local commands; commands=(
+'up:Serve the boot image, start IFCLK and release reset' \
+'down:Hold the FX2 in reset' \
+'reboot:Down, then up\: the FX2 boots again' \
+'boot:What the emulated EEPROM serves at the next up/reboot' \
+'status:Is the FX2 up and enumerated, and with which serial' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly fx2 help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__help__subcmd__boot_commands] )) ||
+_bsly__subcmd__fx2__subcmd__help__subcmd__boot_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 help boot commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__help__subcmd__down_commands] )) ||
+_bsly__subcmd__fx2__subcmd__help__subcmd__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 help down commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__help__subcmd__help_commands] )) ||
+_bsly__subcmd__fx2__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 help help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__help__subcmd__reboot_commands] )) ||
+_bsly__subcmd__fx2__subcmd__help__subcmd__reboot_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 help reboot commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__help__subcmd__status_commands] )) ||
+_bsly__subcmd__fx2__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 help status commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__help__subcmd__up_commands] )) ||
+_bsly__subcmd__fx2__subcmd__help__subcmd__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 help up commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__reboot_commands] )) ||
+_bsly__subcmd__fx2__subcmd__reboot_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 reboot commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__status_commands] )) ||
+_bsly__subcmd__fx2__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 status commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__fx2__subcmd__up_commands] )) ||
+_bsly__subcmd__fx2__subcmd__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly fx2 up commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help_commands] )) ||
+_bsly__subcmd__help_commands() {
+    local commands; commands=(
+'list:List connected Bugslayer decks and their USB devices' \
+'select:Pick which deck to use by default when several are connected' \
+'info:Firmware versions, serial number and USB devices of the deck' \
+'status:Capture engine and FX2 link status' \
+'pins:Live level of every expansion-port signal' \
+'power:Switch the deck'\''s high-side power switches (prompts when omitted)' \
+'pull:I2C pull-ups on the expansion port (standalone only; prompts when omitted)' \
+'fx2:Control the FX2 (CBM9002A) capture pipe (prompts when omitted)' \
+'capture:Record the expansion port\: arm, stream, verify and write a sigrok .sr' \
+'decode:Decode a saved capture' \
+'i2c:Raw I2C on the expansion port, with the deck as master' \
+'deckctrl:Deck controllers (DeckCtrl) on the expansion-port I2C bus' \
+'uart:Print what UART lines on the expansion port carry (sniffed, never driven)' \
+'mux:Switch the port'\''s TX2/RX2 between UART2 and USB (the deck'\''s hub port 4, for decks with a USB MCU there\: D- = TX2, D+ = RX2); standalone only' \
+'drive:Hold an IO pin low, e.g. a deck MCU'\''s BOOT line, or release it (open drain, never driven high; standalone only)' \
+'bridge:Bridge the Crazyflie'\''s UART1/UART2 to a serial port of the deck, with the deck standing in for the Crazyflie (standalone only)' \
+'update:Check the deck'\''s firmware against the GitHub releases and install updates through the USB bootloaders (private repos\: \`gh auth login\`)' \
+'swo:Print a target'\''s SWO trace (ITM, e.g. the Crazyflie'\''s DEBUG_PRINT)' \
+'raw:Send raw control-channel lines; with none, open an interactive console' \
+'settings:Local CLI settings' \
+'completions:Generate a shell completion script (printed to stdout)' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__bridge_commands] )) ||
+_bsly__subcmd__help__subcmd__bridge_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help bridge commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__capture_commands] )) ||
+_bsly__subcmd__help__subcmd__capture_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help capture commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__completions_commands] )) ||
+_bsly__subcmd__help__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help completions commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl_commands() {
+    local commands; commands=(
+'scan:Enumerate the deck controllers as a Crazyflie does (resets them all)' \
+'info:Identification page, CPU ID and GPIO state of one deck' \
+'gpio:Show or set the deck controller'\''s GPIOs (prompts when omitted)' \
+'read:Read registers' \
+'write:Write registers' \
+'reset:Reset every deck controller to its power-on state' \
+    )
+    _describe -t commands 'bsly help deckctrl commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio_commands() {
+    local commands; commands=(
+'show:Direction and level of every GPIO' \
+'dir:Make GPIOs inputs or outputs' \
+'level:Set the output level (takes effect on outputs)' \
+'out:Drive GPIOs\: set the level, then make them outputs (no glitch)' \
+    )
+    _describe -t commands 'bsly help deckctrl gpio commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio__subcmd__dir_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio__subcmd__dir_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help deckctrl gpio dir commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio__subcmd__level_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio__subcmd__level_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help deckctrl gpio level commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio__subcmd__out_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio__subcmd__out_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help deckctrl gpio out commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio__subcmd__show_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__gpio__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help deckctrl gpio show commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__info_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help deckctrl info commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__read_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__read_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help deckctrl read commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__reset_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__reset_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help deckctrl reset commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__scan_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__scan_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help deckctrl scan commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__deckctrl__subcmd__write_commands] )) ||
+_bsly__subcmd__help__subcmd__deckctrl__subcmd__write_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help deckctrl write commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__decode_commands] )) ||
+_bsly__subcmd__help__subcmd__decode_commands() {
+    local commands; commands=(
+'spi:SPI transactions from a capture made with --spi' \
+    )
+    _describe -t commands 'bsly help decode commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__decode__subcmd__spi_commands] )) ||
+_bsly__subcmd__help__subcmd__decode__subcmd__spi_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help decode spi commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__drive_commands] )) ||
+_bsly__subcmd__help__subcmd__drive_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help drive commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__fx2_commands] )) ||
+_bsly__subcmd__help__subcmd__fx2_commands() {
+    local commands; commands=(
+'up:Serve the boot image, start IFCLK and release reset' \
+'down:Hold the FX2 in reset' \
+'reboot:Down, then up\: the FX2 boots again' \
+'boot:What the emulated EEPROM serves at the next up/reboot' \
+'status:Is the FX2 up and enumerated, and with which serial' \
+    )
+    _describe -t commands 'bsly help fx2 commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__fx2__subcmd__boot_commands] )) ||
+_bsly__subcmd__help__subcmd__fx2__subcmd__boot_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help fx2 boot commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__fx2__subcmd__down_commands] )) ||
+_bsly__subcmd__help__subcmd__fx2__subcmd__down_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help fx2 down commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__fx2__subcmd__reboot_commands] )) ||
+_bsly__subcmd__help__subcmd__fx2__subcmd__reboot_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help fx2 reboot commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__fx2__subcmd__status_commands] )) ||
+_bsly__subcmd__help__subcmd__fx2__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help fx2 status commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__fx2__subcmd__up_commands] )) ||
+_bsly__subcmd__help__subcmd__fx2__subcmd__up_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help fx2 up commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__help_commands] )) ||
+_bsly__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__i2c_commands] )) ||
+_bsly__subcmd__help__subcmd__i2c_commands() {
+    local commands; commands=(
+'scan:List the addresses that acknowledge (skips the DeckCtrl reset/listen addresses 0x41/0x42, which have side effects)' \
+'read:Read bytes, optionally writing a register address first (repeated START)' \
+'write:Write bytes' \
+'recover:Clock SCL until a stuck device releases SDA' \
+    )
+    _describe -t commands 'bsly help i2c commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__i2c__subcmd__read_commands] )) ||
+_bsly__subcmd__help__subcmd__i2c__subcmd__read_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help i2c read commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__i2c__subcmd__recover_commands] )) ||
+_bsly__subcmd__help__subcmd__i2c__subcmd__recover_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help i2c recover commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__i2c__subcmd__scan_commands] )) ||
+_bsly__subcmd__help__subcmd__i2c__subcmd__scan_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help i2c scan commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__i2c__subcmd__write_commands] )) ||
+_bsly__subcmd__help__subcmd__i2c__subcmd__write_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help i2c write commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__info_commands] )) ||
+_bsly__subcmd__help__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help info commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__list_commands] )) ||
+_bsly__subcmd__help__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help list commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__mux_commands] )) ||
+_bsly__subcmd__help__subcmd__mux_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help mux commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__pins_commands] )) ||
+_bsly__subcmd__help__subcmd__pins_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help pins commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__power_commands] )) ||
+_bsly__subcmd__help__subcmd__power_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help power commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__pull_commands] )) ||
+_bsly__subcmd__help__subcmd__pull_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help pull commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__raw_commands] )) ||
+_bsly__subcmd__help__subcmd__raw_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help raw commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__select_commands] )) ||
+_bsly__subcmd__help__subcmd__select_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help select commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__settings_commands] )) ||
+_bsly__subcmd__help__subcmd__settings_commands() {
+    local commands; commands=(
+'show:Show the settings' \
+'clear:Forget the selected deck' \
+    )
+    _describe -t commands 'bsly help settings commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__settings__subcmd__clear_commands] )) ||
+_bsly__subcmd__help__subcmd__settings__subcmd__clear_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help settings clear commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__settings__subcmd__show_commands] )) ||
+_bsly__subcmd__help__subcmd__settings__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help settings show commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__status_commands] )) ||
+_bsly__subcmd__help__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help status commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__swo_commands] )) ||
+_bsly__subcmd__help__subcmd__swo_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help swo commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__uart_commands] )) ||
+_bsly__subcmd__help__subcmd__uart_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help uart commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__help__subcmd__update_commands] )) ||
+_bsly__subcmd__help__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly help update commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c_commands] )) ||
+_bsly__subcmd__i2c_commands() {
+    local commands; commands=(
+'scan:List the addresses that acknowledge (skips the DeckCtrl reset/listen addresses 0x41/0x42, which have side effects)' \
+'read:Read bytes, optionally writing a register address first (repeated START)' \
+'write:Write bytes' \
+'recover:Clock SCL until a stuck device releases SDA' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly i2c commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__help_commands] )) ||
+_bsly__subcmd__i2c__subcmd__help_commands() {
+    local commands; commands=(
+'scan:List the addresses that acknowledge (skips the DeckCtrl reset/listen addresses 0x41/0x42, which have side effects)' \
+'read:Read bytes, optionally writing a register address first (repeated START)' \
+'write:Write bytes' \
+'recover:Clock SCL until a stuck device releases SDA' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly i2c help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__help__subcmd__help_commands] )) ||
+_bsly__subcmd__i2c__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly i2c help help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__help__subcmd__read_commands] )) ||
+_bsly__subcmd__i2c__subcmd__help__subcmd__read_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly i2c help read commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__help__subcmd__recover_commands] )) ||
+_bsly__subcmd__i2c__subcmd__help__subcmd__recover_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly i2c help recover commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__help__subcmd__scan_commands] )) ||
+_bsly__subcmd__i2c__subcmd__help__subcmd__scan_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly i2c help scan commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__help__subcmd__write_commands] )) ||
+_bsly__subcmd__i2c__subcmd__help__subcmd__write_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly i2c help write commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__read_commands] )) ||
+_bsly__subcmd__i2c__subcmd__read_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly i2c read commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__recover_commands] )) ||
+_bsly__subcmd__i2c__subcmd__recover_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly i2c recover commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__scan_commands] )) ||
+_bsly__subcmd__i2c__subcmd__scan_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly i2c scan commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__i2c__subcmd__write_commands] )) ||
+_bsly__subcmd__i2c__subcmd__write_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly i2c write commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__info_commands] )) ||
+_bsly__subcmd__info_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly info commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__list_commands] )) ||
+_bsly__subcmd__list_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly list commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__mux_commands] )) ||
+_bsly__subcmd__mux_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly mux commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__pins_commands] )) ||
+_bsly__subcmd__pins_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly pins commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__power_commands] )) ||
+_bsly__subcmd__power_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly power commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__pull_commands] )) ||
+_bsly__subcmd__pull_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly pull commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__raw_commands] )) ||
+_bsly__subcmd__raw_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly raw commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__select_commands] )) ||
+_bsly__subcmd__select_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly select commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__settings_commands] )) ||
+_bsly__subcmd__settings_commands() {
+    local commands; commands=(
+'show:Show the settings' \
+'clear:Forget the selected deck' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly settings commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__settings__subcmd__clear_commands] )) ||
+_bsly__subcmd__settings__subcmd__clear_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly settings clear commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__settings__subcmd__help_commands] )) ||
+_bsly__subcmd__settings__subcmd__help_commands() {
+    local commands; commands=(
+'show:Show the settings' \
+'clear:Forget the selected deck' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'bsly settings help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__settings__subcmd__help__subcmd__clear_commands] )) ||
+_bsly__subcmd__settings__subcmd__help__subcmd__clear_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly settings help clear commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__settings__subcmd__help__subcmd__help_commands] )) ||
+_bsly__subcmd__settings__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly settings help help commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__settings__subcmd__help__subcmd__show_commands] )) ||
+_bsly__subcmd__settings__subcmd__help__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly settings help show commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__settings__subcmd__show_commands] )) ||
+_bsly__subcmd__settings__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly settings show commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__status_commands] )) ||
+_bsly__subcmd__status_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly status commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__swo_commands] )) ||
+_bsly__subcmd__swo_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly swo commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__uart_commands] )) ||
+_bsly__subcmd__uart_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly uart commands' commands "$@"
+}
+(( $+functions[_bsly__subcmd__update_commands] )) ||
+_bsly__subcmd__update_commands() {
+    local commands; commands=()
+    _describe -t commands 'bsly update commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_bsly" ]; then
+    _bsly "$@"
+else
+    compdef _bsly bsly
+fi

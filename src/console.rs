@@ -1,4 +1,4 @@
-// `bsly raw` with no arguments: an interactive console on the control channel,
+// `bscli raw` with no arguments: an interactive console on the control channel,
 // with Tab completion of the firmware's command vocabulary and the session's
 // history offered on an empty line.
 
@@ -104,7 +104,7 @@ pub fn run(ctl: &mut Control, serial: &str) -> Result<()> {
     );
     let mut completer = Completer::default();
     loop {
-        let line = match Text::new("bsly>")
+        let line = match Text::new("bscli>")
             .with_autocomplete(completer.clone())
             .with_page_size(8)
             .prompt()

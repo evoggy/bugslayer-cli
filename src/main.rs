@@ -1,4 +1,4 @@
-// bsly: command-line client for the Bugslayer deck.
+// bscli: command-line client for the Bugslayer deck.
 
 mod capture;
 mod console;
@@ -28,7 +28,7 @@ const CONFIG_APP: &str = "bugslayer-cli";
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 struct Config {
-    /// Serial of the deck `bsly select` picked, used when several are connected.
+    /// Serial of the deck `bscli select` picked, used when several are connected.
     selected: Option<String>,
     /// The deck controllers last enumerated behind each Bugslayer, by serial:
     /// their addresses survive until they are reset or lose power.
@@ -61,7 +61,7 @@ fn choose<T: Copy>(non_interactive: bool, arg: &str, prompt: &str, options: &[(T
 }
 
 /// The deck to use: `--serial` if given, else the only one connected, else the
-/// selected one (`bsly select`), else ask.
+/// selected one (`bscli select`), else ask.
 fn find_deck(serial: Option<&str>, selected: Option<&str>, non_interactive: bool) -> Result<Deck> {
     match device::find_deck(serial, selected)? {
         device::DeckChoice::One(d) => Ok(*d),
@@ -247,7 +247,7 @@ fn fx2_up(ctl: &mut Control, deck: &Deck, line: &str) -> Result<()> {
 
 fn emit_completion_script(shell: clap_complete::Shell) {
     let mut cmd = CliArgs::command();
-    clap_complete::generate(shell, &mut cmd, "bsly", &mut std::io::stdout());
+    clap_complete::generate(shell, &mut cmd, "bscli", &mut std::io::stdout());
 }
 
 /// Dynamic completion candidates, one per line. Only lists USB devices; never
@@ -262,7 +262,7 @@ fn emit_dynamic_completions(kind: CompletionKind, partial: &str) {
 }
 
 fn main() {
-    // Die quietly on a closed pipe (`bsly decode spi x.sr | head`) instead of
+    // Die quietly on a closed pipe (`bscli decode spi x.sr | head`) instead of
     // panicking in println!.
     #[cfg(unix)]
     unsafe {
@@ -409,7 +409,7 @@ fn run() -> Result<()> {
             println!("{:<12}{:04x}:{:04x}  {}", "control", device::VID, device::PID_CTRL, deck.port.as_deref().unwrap_or("(no port)"));
             match &deck.fx2 {
                 Some(d) => println!("{:<12}{:04x}:{:04x}  {}", "capture", d.vendor_id(), d.product_id(), device::speed_name(d)),
-                None => println!("{:<12}{}", "capture", "FX2 down (bsly fx2 up)".yellow()),
+                None => println!("{:<12}{}", "capture", "FX2 down (bscli fx2 up)".yellow()),
             }
             match &deck.probe {
                 Some(d) => {
@@ -647,7 +647,7 @@ fn run() -> Result<()> {
                 if st.cf_vcc && !st.vcc_en {
                     bail!(CliError::Rejected(
                         "a Crazyflie powers the expansion port and drives TX1/TX2; the bridge is standalone \
-                         only (`bsly uart` sniffs without driving)"
+                         only (`bscli uart` sniffs without driving)"
                             .into()
                     ));
                 }
